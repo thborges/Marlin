@@ -25,7 +25,7 @@
 
 #include "language.h"
 
-#if ENABLED(DOGLCD)
+#if (ENABLED(DOGLCD) || ENABLED(SIMPLEU8LCD))
   #define HARDWARE_CHAR_OUT(C) u8g.print((char)(C))
 #else
   #define HARDWARE_CHAR_OUT(C) lcd.write((char)(C))

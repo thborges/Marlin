@@ -96,6 +96,10 @@ uint8_t lcd_status_update_delay = 1, // First update one loop delayed
   #include "ultralcd_impl_DOGM.h"
   #include <U8glib.h>
   bool drawing_screen, first_page; // = false
+#elif ENABLED(SIMPLEU8LCD)
+  #include "simplelcd_impl.h"
+  #include <U8glib.h>
+  bool drawing_screen, first_page;
 #else
   #include "ultralcd_impl_HD44780.h"
   constexpr bool first_page = true;
@@ -539,7 +543,7 @@ uint16_t max_display_update_time = 0;
       #endif
       lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT;
       screen_changed = true;
-      #if ENABLED(DOGLCD)
+      #if ENABLED(DOGLCD) || ENABLED(SIMPLEU8LCD)
         drawing_screen = false;
       #endif
     }
@@ -650,7 +654,7 @@ void lcd_status_screen() {
     ENCODER_RATE_MULTIPLY(false);
   #endif
 
-  #if ENABLED(LCD_SET_PROGRESS_MANUALLY) && ENABLED(SDSUPPORT) && (ENABLED(LCD_PROGRESS_BAR) || ENABLED(DOGLCD))
+  #if ENABLED(LCD_SET_PROGRESS_MANUALLY) && ENABLED(SDSUPPORT) && (ENABLED(LCD_PROGRESS_BAR) || ENABLED(DOGLCD) || ENABLED(SIMPLEU8LCD))
     // Progress bar % comes from SD when actively printing
     if (IS_SD_PRINTING)
       progress_bar_percent = card.percentDone();
@@ -3985,7 +3989,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
       void lcd_reselect_last_file() {
         if (last_sdfile_encoderPosition == 0xFFFF) return;
-        #if ENABLED(DOGLCD)
+        #if ENABLED(DOGLCD) || ENABLED(SIMPLEU8LCD)
           // Some of this is a hack to force the screen update to work.
           // TODO: Fix the real issue that causes this!
           lcdDrawUpdate = LCDVIEW_CALL_REDRAW_NEXT;
@@ -4000,7 +4004,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
         defer_return_to_status = true;
         last_sdfile_encoderPosition = 0xFFFF;
 
-        #if ENABLED(DOGLCD)
+        #if ENABLED(DOGLCD) || ENABLED(SIMPLEU8LCD)
           lcd_update();
         #endif
       }
@@ -4975,7 +4979,7 @@ void lcd_quick_feedback(const bool clear_buttons) {
       encoderTopLine = 0;
       encoderPosition = 2 * ENCODER_STEPS_PER_MENU_ITEM;
       screen_changed = true;
-      #if ENABLED(DOGLCD)
+      #if ENABLED(DOGLCD) || ENABLED(SIMPLEU8LCD)
         drawing_screen = false;
       #endif
       lcd_refresh();
@@ -5196,7 +5200,7 @@ void lcd_update() {
 
   const millis_t ms = millis();
   if (ELAPSED(ms, next_lcd_update_ms)
-    #if ENABLED(DOGLCD)
+    #if ENABLED(DOGLCD) || ENABLED(SIMPLEU8LCD)
       || drawing_screen
     #endif
   ) {
@@ -5273,7 +5277,7 @@ void lcd_update() {
       !lcd_status_update_delay--
     ) {
       lcd_status_update_delay = 9
-        #if ENABLED(DOGLCD)
+        #if ENABLED(DOGLCD) || ENABLED(SIMPLEU8LCD)
           + 3
         #endif
       ;
@@ -5295,7 +5299,7 @@ void lcd_update() {
     // then we want to use 1/2 of the time only.
     uint16_t bbr2 = planner.block_buffer_runtime() >> 1;
 
-    #if ENABLED(DOGLCD)
+    #if ENABLED(DOGLCD) || ENABLED(SIMPLEU8LCD)
       #define IS_DRAWING drawing_screen
     #else
       #define IS_DRAWING false
@@ -5326,7 +5330,7 @@ void lcd_update() {
         #define CURRENTSCREEN() lcd_status_screen()
       #endif
 
-      #if ENABLED(DOGLCD)
+      #if ENABLED(DOGLCD) || ENABLED(SIMPLEU8LCD)
         #if ENABLED(LIGHTWEIGHT_UI)
           #if ENABLED(ULTIPANEL)
             const bool in_status = currentScreen == lcd_status_screen;
