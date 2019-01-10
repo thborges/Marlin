@@ -1691,6 +1691,11 @@
 //#define ELB_FULL_GRAPHIC_CONTROLLER
 
 //
+// Nokia 5110 84x48 Graphic Display Controller
+//#define NOKIA5110_LCD
+
+
+//
 // BQ LCD Smart Controller shipped by
 // default with the BQ Hephestos 2 and Witbox 2.
 //
