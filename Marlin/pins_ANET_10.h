@@ -151,17 +151,25 @@
  *  ZONESTAR_LCD
  *  ANET_FULL_GRAPHICS_LCD
  *  REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER
+ *  NOKIA5110_LCD
  */
-#if ENABLED(SIMPLEU8LCD_NOKIA5110)
+#if ENABLED(NOKIA5110_LCD)
   #define LCD_SCREEN_ROT_180
   #define FIL_RUNOUT_PIN 27  // Filament runout sensor
-  #define SLCD_CS_PIN    10
-  #define SLCD_A0_PIN    11
-  #define SLCD_CLK_PIN   16
-  #define SLCD_DAT_PIN   17
   #define BTN_EN1        28
   #define BTN_EN2        29
   #define BTN_ENC        30
+  #define SLCD_CS_PIN    10
+  #define SLCD_A0_PIN    11
+
+  #define HARDWARE_SPI // enable this when LCD is connected to MOSI and SCK pins in J3
+  #if ENABLED(HARDWARE_SPI)
+    // pins 16 and 17 are free!
+    #define SPI_SPEED SPI_QUARTER_SPEED
+  #else //!HARDWARE_SPI
+    #define SLCD_CLK_PIN   16
+    #define SLCD_DAT_PIN   17
+  #endif
 
 #elif ENABLED(ULTRA_LCD)
   #define LCD_SDSS           28

@@ -39,9 +39,39 @@
 #include <U8glib.h>
 
 #if ENABLED(SIMPLEU8LCD_NOKIA5110)
-  U8GLIB_PCD8544 u8g(SLCD_CLK_PIN, SLCD_DAT_PIN, SLCD_CS_PIN, SLCD_A0_PIN);
+  #define U8G_HW_SPI_2X
   #define LCD_PIXEL_WIDTH 84
   #define LCD_PIXEL_HEIGHT 48
+  #define LCD_PAGE_HEIGHT 8
+
+  uint8_t u8g_com_arduino_hw_spi_fn_fixpcd8544(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
+  {
+    uint8_t result = u8g_com_arduino_hw_spi_fn(u8g, msg, arg_val, arg_ptr);
+    if (msg == U8G_COM_MSG_INIT) {
+        SPCR = 0;
+        // change scale to fclk/16
+        SPCR =  (1<<SPE) | (1<<MSTR)|(0<<SPR1)|(1<<SPR0)|(0<<CPOL)|(0<<CPHA);
+    }
+    return result;
+  }
+
+  U8G_PB_DEV(u8g_dev_pcd8544_84x48_hw_spi_fix, LCD_PIXEL_WIDTH, LCD_PIXEL_HEIGHT, LCD_PAGE_HEIGHT,
+    u8g_dev_pcd8544_84x48_hw_spi.dev_fn, u8g_com_arduino_hw_spi_fn_fixpcd8544);
+
+  class U8GLIB_PDC8544_MRLN : public U8GLIB {
+  public:
+    U8GLIB_PDC8544_MRLN(uint8_t sck, uint8_t mosi, uint8_t cs, uint8_t a0, uint8_t reset = U8G_PIN_NONE)
+      : U8GLIB(&u8g_dev_pcd8544_84x48_sw_spi, sck, mosi, cs, a0, reset) {}
+    U8GLIB_PDC8544_MRLN(uint8_t cs, uint8_t a0, uint8_t reset = U8G_PIN_NONE)
+      : U8GLIB(&u8g_dev_pcd8544_84x48_hw_spi_fix, cs, a0, reset) {
+    }
+  };
+
+  #if ENABLED(HARDWARE_SPI)
+    U8GLIB_PDC8544_MRLN u8g(SLCD_CS_PIN, SLCD_A0_PIN);
+  #else
+    U8GLIB_PDC8544_MRLN u8g(SLCD_CLK_PIN, SLCD_DAT_PIN, SLCD_CS_PIN, SLCD_A0_PIN);
+  #endif
 #endif
 
 #include "utf_mapper.h"
@@ -356,7 +386,7 @@ static void lcd_implementation_init() {
     u8g.begin();
   #endif
 
-  u8g.setContrast(lcd_contrast);
+  //u8g.setContrast(lcd_contrast);
   u8g.setFont(FONT_TEXT_NAME);
   u8g.setFontPosTop();
   u8g.setColorIndex(1); // Instructs the display to draw with a pixel on.
@@ -459,8 +489,9 @@ void lcd_kill_screen() {
 
     static void lcd_implementation_hotend_status(const uint8_t row, const uint8_t extruder=active_extruder) {
       uint8_t cy = row * row_height;
-      // TODO: Find correct pos, currently overlaping
-      u8g.setPrintPos(LCD_PIXEL_WIDTH - 11 * (FONT_CHAR_WIDTH), cy);
+      u8g.setColorIndex(0);
+
+      u8g.setPrintPos(LCD_PIXEL_WIDTH / 2, cy);
       u8g.print('E');
       u8g.print((char)('1' + extruder));
       u8g.print(' ');
@@ -469,6 +500,8 @@ void lcd_kill_screen() {
 
       if (lcd_blink() || !thermalManager.is_heater_idle(extruder))
         u8g.print(itostr3(thermalManager.degTargetHotend(extruder)));
+
+      u8g.setColorIndex(1);
     }
 
   #endif // ADVANCED_PAUSE_FEATURE
