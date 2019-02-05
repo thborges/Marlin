@@ -1064,7 +1064,6 @@ inline void get_serial_commands() {
 
       while (*command == ' ') command++;                // Skip leading spaces
       char *npos = (*command == 'N') ? command : NULL;  // Require the N parameter to start the line
-
       if (npos) {
 
         bool M110 = strstr_P(command, PSTR("M110")) != NULL;
@@ -1245,6 +1244,56 @@ inline void get_serial_commands() {
     }
   }
 
+  inline void get_raw_sd_file() {
+    static char serial_raw_buffer[MAX_CMD_SIZE];
+    static int sc = 0;
+
+    static uint32_t current_offset = 0;
+    static uint16_t bytes_written = 0;
+    static uint8_t chksum = 0;
+
+    int c;
+    while ((c = MYSERIAL0.read()) >= 0) {
+      //char serial_char = c;
+      if (c == 0) { // sync byte, verify checksum
+          int orig_chksum = MYSERIAL0.read(); // next byte is checksum
+          if (orig_chksum == chksum) {
+            card.write_buff(serial_raw_buffer, sc);
+            current_offset += bytes_written + sc;
+            SERIAL_PROTOCOLPGM(MSG_OK);
+            SERIAL_EOL();
+          }
+          else {
+            SERIAL_PROTOCOLPGM("rs");
+            SERIAL_EOL();
+             // rollback last chunk, ever if written
+            card.setIndex(current_offset);
+          }
+          chksum = 0;
+          sc = 0;
+          bytes_written = 0;
+      }
+      else if (c == 1 && sc == 0) { // file ended
+        card.closefile();
+        card.saving_raw = false;
+        return;
+      }
+      else {
+        chksum ^= (char)c;
+        serial_raw_buffer[sc++] = (char)c;
+      }
+
+      // buffer full, write to SD
+      if (sc == MAX_CMD_SIZE) {
+        card.write_buff(serial_raw_buffer, sc);
+        bytes_written += sc;
+        sc = 0;
+
+        thermalManager.manage_heater();
+      }
+    } // receiving file content
+  }
+
   #if ENABLED(POWER_LOSS_RECOVERY)
 
     inline bool drain_job_recovery_commands() {
@@ -1275,6 +1324,11 @@ void get_available_commands() {
   // Immediate commands block the other queues
   if (drain_injected_commands_P()) return;
 
+  #if ENABLED(SDSUPPORT)
+    if (card.saving && card.saving_raw)
+      get_raw_sd_file();
+    else
+  #endif
   get_serial_commands();
 
   #if ENABLED(POWER_LOSS_RECOVERY)
@@ -7505,7 +7559,14 @@ inline void gcode_M17() {
   /**
    * M28: Start SD Write
    */
-  inline void gcode_M28() { card.openFile(parser.string_arg, false); }
+  inline void gcode_M28() {
+    char *file = parser.string_arg;
+    if (file[0] == '!') {
+      card.saving_raw = true;
+      file++;
+    }
+    card.openFile(file, false);
+  }
 
   /**
    * M29: Stop SD Write

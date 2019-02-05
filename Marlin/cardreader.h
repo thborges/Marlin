@@ -39,6 +39,7 @@ public:
 
   void initsd();
   void write_command(char *buf);
+  void write_buff(char *buf, uint16_t len);
 
   void beginautostart();
   void checkautostart();
@@ -118,6 +119,7 @@ public:
 
 public:
   bool saving, logging, sdprinting, cardOK, filenameIsDir, abort_sd_printing;
+  bool saving_raw;
   char filename[FILENAME_LENGTH], longFilename[LONG_FILENAME_LENGTH];
   int8_t autostart_index;
 private:

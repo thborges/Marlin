@@ -44,7 +44,7 @@ CardReader::CardReader() {
       //sort_reverse = false;
     #endif
   #endif
-  sdprinting = cardOK = saving = logging = false;
+  sdprinting = cardOK = saving = logging = saving_raw = false;
   filesize = 0;
   sdpos = 0;
   file_subcall_ctr = 0;
@@ -486,6 +486,15 @@ void CardReader::write_command(char *buf) {
   }
 }
 
+void CardReader::write_buff(char *buf, uint16_t len) {
+  file.writeError = false;
+  file.write(buf, len);
+  if (file.writeError) {
+    SERIAL_ERROR_START();
+    SERIAL_ERRORLNPGM(MSG_SD_ERR_WRITE_TO_FILE);
+  }
+}
+
 //
 // Run the next autostart file. Called:
 // - On boot after successful card init
@@ -528,7 +537,7 @@ void CardReader::beginautostart() {
 void CardReader::closefile(const bool store_location) {
   file.sync();
   file.close();
-  saving = logging = false;
+  saving = logging = saving_raw = false;
 
   if (store_location) {
     //future: store printer state, filename and position for continuing a stopped print
