@@ -1245,53 +1245,52 @@ inline void get_serial_commands() {
   }
 
   inline void get_raw_sd_file() {
-    static char serial_raw_buffer[MAX_CMD_SIZE];
-    static int sc = 0;
+    #define MAX_RAW_SIZE 512
+    char serial_raw_buffer[MAX_RAW_SIZE];
+    int sc = 0;
+    uint8_t chksum = 0;
 
-    static uint32_t current_offset = 0;
-    static uint16_t bytes_written = 0;
-    static uint8_t chksum = 0;
+    #define EOT 4
+    #define ACK 6
+    #define NCK 21
+    #define ETB 23
 
-    int c;
-    while ((c = MYSERIAL0.read()) >= 0) {
-      //char serial_char = c;
-      if (c == 0) { // sync byte, verify checksum
-          int orig_chksum = MYSERIAL0.read(); // next byte is checksum
+    do {
+      int c;
+      while ((c = MYSERIAL0.read()) < 0) // wait for char
+        thermalManager.manage_heater();
+
+      if (c == ETB) { // end of block, verify checksum
+          int orig_chksum;
+          while ((orig_chksum = MYSERIAL0.read()) < 0); // next byte is checksum
           if (orig_chksum == chksum) {
             card.write_buff(serial_raw_buffer, sc);
-            current_offset += bytes_written + sc;
-            SERIAL_PROTOCOLPGM(MSG_OK);
-            SERIAL_EOL();
+            SERIAL_CHAR(ACK);
           }
-          else {
-            SERIAL_PROTOCOLPGM("rs");
-            SERIAL_EOL();
-             // rollback last chunk, ever if written
-            card.setIndex(current_offset);
-          }
+          else SERIAL_CHAR(NCK);
+
           chksum = 0;
           sc = 0;
-          bytes_written = 0;
       }
-      else if (c == 1 && sc == 0) { // file ended
+      else if (c == EOT) { // file ended
         card.closefile();
         card.saving_raw = false;
+        card.saving = false;
+        SERIAL_CHAR(EOT);
         return;
       }
-      else {
+      else if (sc < MAX_RAW_SIZE) {
         chksum ^= (char)c;
         serial_raw_buffer[sc++] = (char)c;
       }
 
       // buffer full, write to SD
-      if (sc == MAX_CMD_SIZE) {
+      /*if (sc == MAX_RAW_SIZE) {
         card.write_buff(serial_raw_buffer, sc);
         bytes_written += sc;
         sc = 0;
-
-        thermalManager.manage_heater();
-      }
-    } // receiving file content
+      }*/
+    } while (1); // receiving file content
   }
 
   #if ENABLED(POWER_LOSS_RECOVERY)
