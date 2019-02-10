@@ -1284,12 +1284,6 @@ inline void get_serial_commands() {
         serial_raw_buffer[sc++] = (char)c;
       }
 
-      // buffer full, write to SD
-      /*if (sc == MAX_RAW_SIZE) {
-        card.write_buff(serial_raw_buffer, sc);
-        bytes_written += sc;
-        sc = 0;
-      }*/
     } while (1); // receiving file content
   }
 
