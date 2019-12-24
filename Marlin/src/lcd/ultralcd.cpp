@@ -83,7 +83,12 @@ MarlinUI ui;
 #if HAS_SPI_LCD
 
 #if HAS_GRAPHICAL_LCD
-  #include "dogm/ultralcd_DOGM.h"
+  #if ENABLED(NOKIA5110_LCD)
+    #include <U8glib.h>
+    #include "smallu8g/smallu8g_lcd_impl.h"
+  #else
+    #include "dogm/ultralcd_DOGM.h"
+  #endif
 #endif
 
 #include "lcdprint.h"
