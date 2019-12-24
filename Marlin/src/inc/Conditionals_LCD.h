@@ -40,6 +40,16 @@
   #define DOGLCD
   #define IS_ULTIPANEL
 
+#elif ENABLED(NOKIA5110_LCD)
+
+  #define IS_ULTIPANEL
+  #define IS_ULTRA_LCD
+  #define SMALL_LCD
+  #define DEFAULT_LCD_CONTRAST 120
+  #define LCD_CONTRAST_MIN 0
+  #define LCD_CONTRAST_MAX 255
+  #define LCD_HEIGHT 6
+
 #elif ENABLED(ZONESTAR_LCD)
 
   #define ADC_KEYPAD
@@ -372,7 +382,7 @@
   #define HAS_DISPLAY 1
   #if ENABLED(ULTRA_LCD)
     #define HAS_SPI_LCD 1
-    #if ENABLED(DOGLCD)
+    #if ENABLED(DOGLCD) || ENABLED(SMALL_LCD)
       #define HAS_GRAPHICAL_LCD 1
     #else
       #define HAS_CHARACTER_LCD 1
