@@ -1,0 +1,253 @@
+/*
+ * A Driver to SSD1331 Color OLED Display
+ * Uses the device buit-in Graphics Acceleration feature
+ * 
+ * Author: Thiago Borges de Oliveira (thborges@gmail.com)
+ * 
+ * Based on Colour Graphics Library developed by David Johnson-Davies
+ * http://www.technoblogy.com/show?2EA7
+ * 
+ * CC BY 4.0, Licensed under a Creative Commons Attribution 4.0 International license: 
+ * http://creativecommons.org/licenses/by/4.0/
+ */
+
+#pragma once
+
+#include "../../inc/MarlinConfigPre.h"
+#include "../../HAL/HAL.h"
+
+#define HARDWARE_SPI
+
+// Initialization sequence
+const unsigned char SSD1331_init[] PROGMEM = {
+  0xAE,       // Display off
+  0xA0, 0x60, // Driver remap and colour depth
+  0xA1, 0x00, // set start line
+  0xA2, 0x00, // display offset
+  0xA4,       // normal display
+  0xA8, 0x3F, // Multiplex
+  0xAD, 0x8E, // Master mode
+  0xB0, 0x0B, // disable power save 
+  0xB1, 0x31, // precharge
+  0xB3, 0xF0, // 7:4 = Oscillator Frequency, 3:0 = CLK Div Ratio (A[3:0]+1 = 1..16)  
+  0x8A, 0x64, // precharger A
+  0x8B, 0x78, // precharger B
+  0xBB, 0x3A, // PRECHARGELEVEL
+  0xBE, 0x3E, // vcomh
+  0x87, 0x09, // set master current
+  0x81, 0x91, // contrast RED
+  0x82, 0x50, // contrast GREEN
+  0x83, 0x7D, // contrast BLUE
+  0xAF,
+};
+
+constexpr int SSD1331_init_len = sizeof(SSD1331_init);
+
+enum COLOR_INDEX {CI_FOREGROUND = 0, CI_BACKGROUND = 1, _CI_COUNT};
+
+struct font_index { uint16_t offset; uint8_t bytes; };
+
+struct ColorComponents {
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+};
+
+class SSD1331GA {
+private:
+    #ifndef HARDWARE_SPI
+    uint8_t CLK_PIN, DATA_PIN;
+    volatile uint8_t *data_port_clk, *data_port_dat;
+    uint8_t data_mask_clk, data_mask_dat;
+    #endif
+    
+    uint8_t CS_PIN, RST_PIN;
+    volatile uint8_t *data_port_rst, *data_port_cs;
+    uint8_t data_mask_rst, data_mask_cs;
+
+    const uint16_t *curr_font_offsets;
+	const uint8_t *curr_font_widths;
+    const uint8_t *curr_font_bitmaps;
+
+    uint8_t curr_x, curr_y;
+    struct ColorComponents curr_color[_CI_COUNT];
+
+    inline void send(const uint8_t d);
+	inline int8_t get_char_width(const char c);
+
+public:
+    #if DISABLED(HARDWARE_SPI)
+    SSD1331GA(const uint8_t CLK, const uint8_t DAT, const uint8_t CS, const uint8_t RST);
+    #else
+    SSD1331GA(const uint8_t CS, const uint8_t RST);
+    #endif
+    
+    void begin();
+    void setColor(const COLOR_INDEX idx, const uint8_t red, const uint8_t green, const uint8_t blue);
+    
+    void setColor(const uint8_t red, const uint8_t green, const uint8_t blue) {
+        setColor(CI_FOREGROUND, red, green, blue);
+    }
+    
+    uint8_t print(const char *str);
+    uint8_t printP(const char *pstr);
+
+    void draw_char(const char c, bool sep);
+    uint8_t drawString(const uint8_t x, const uint8_t y, const char *str);
+
+	uint8_t stringWidth(const char *str);
+	uint8_t stringWidthP(const char *pstr);
+    
+    inline void setPrintPos(const uint8_t x, const uint8_t y) {
+        curr_x = x;
+        curr_y = y;
+    }
+
+    void drawRect(const uint8_t x, const uint8_t y, const uint8_t w, const uint8_t h, const bool filled);
+    
+	void drawBox(const uint8_t x, const uint8_t y, const uint8_t w, const uint8_t h) {
+		drawRect(x, y, w, h, true);
+	}
+
+    void drawFrame(const uint8_t x, const uint8_t y, const uint8_t w, const uint8_t h) {
+		drawRect(x, y, w, h, false);
+	}
+
+    void drawLine(const uint8_t x0, const uint8_t y0, const uint8_t x1, const uint8_t y1, const COLOR_INDEX idx);
+    void drawPixel(const uint8_t x, const uint8_t y) {
+		drawLine(x, y, x, y, CI_FOREGROUND);
+	}
+    void drawPixelColor(const uint8_t x, const uint8_t y, const COLOR_INDEX idx) {
+		drawLine(x, y, x, y, idx);
+	}
+	void setFont(const uint16_t *font_offsets, const uint8_t *font_widths, const uint8_t *font_bitmaps);
+    void clearRect(const uint8_t x, const uint8_t y, const uint8_t w, const uint8_t h);
+    
+    void clearScreen() {
+        clearRect(0, 0, 95, 63);
+		delay(10);
+    }
+
+    uint8_t getHeight() { return 64; }
+    uint8_t getWidth() { return 96; };
+};
+
+/*
+  Fontname: 04B_03
+  Copyright: 19992003 / yuji oshimo�o / 04@dsg4.com / www.04.jp.org
+  from char 32 to 127
+  width 5, height 7
+*/
+const uint8_t font_04B_03_bitmaps[] PROGMEM = {
+  	/* */ 0x0,
+	/*!*/ 0x2e,
+	/*"*/ 0x6,0x0,0x6,
+	/*#*/ 0x14,0x3e,0x14,0x3e,0x14,
+	/*$*/ 0x14,0x76,0x2c,0x28,
+	/*%*/ 0x20,0x6,0x8,0x30,0x2,
+	/*&*/ 0x28,0x10,0x2a,0x2a,0x14,
+	/*'*/ 0x6,
+	/*(*/ 0x22,0x1c,
+	/*)*/ 0x1c,0x22,
+	/***/ 0xa,0x4,0xa,
+	/*+*/ 0x8,0x1c,0x8,
+	/*,*/ 0x20,0x40,
+	/*-*/ 0x8,0x8,0x8,
+	/*.*/ 0x20,
+	/*/*/ 0x2,0x4,0x8,0x10,0x20,
+	/*0*/ 0x1c,0x22,0x22,0x1c,
+	/*1*/ 0x3e,0x2,
+	/*2*/ 0x24,0x2a,0x2a,0x32,
+	/*3*/ 0x14,0x2a,0x2a,0x22,
+	/*4*/ 0x10,0x3e,0x14,0x18,
+	/*5*/ 0x12,0x2a,0x2a,0x2e,
+	/*6*/ 0x10,0x2a,0x2a,0x1c,
+	/*7*/ 0x6,0xa,0x32,0x2,
+	/*8*/ 0x14,0x2a,0x2a,0x14,
+	/*9*/ 0x1c,0x2a,0x2a,0x4,
+	/*:*/ 0x14,
+	/*;*/ 0x34,
+	/*<*/ 0x22,0x14,0x8,
+	/*=*/ 0x14,0x14,0x14,
+	/*>*/ 0x8,0x14,0x22,
+	/*?*/ 0x4,0xa,0x2a,0x2,
+	/*@*/ 0x1c,0x2a,0x3a,0x22,0x1c,
+	/*A*/ 0x3c,0x12,0x12,0x3c,
+	/*B*/ 0x14,0x2a,0x2a,0x3e,
+	/*C*/ 0x22,0x22,0x1c,
+	/*D*/ 0x1c,0x22,0x22,0x3e,
+	/*E*/ 0x2a,0x2a,0x3e,
+	/*F*/ 0xa,0xa,0x3e,
+	/*G*/ 0x3a,0x2a,0x22,0x1c,
+	/*H*/ 0x3e,0x8,0x8,0x3e,
+	/*I*/ 0x22,0x3e,0x22,
+	/*J*/ 0x1e,0x22,0x20,0x10,
+	/*K*/ 0x22,0x14,0x8,0x3e,
+	/*L*/ 0x20,0x20,0x3e,
+	/*M*/ 0x3e,0x4,0x8,0x4,0x3e,
+	/*N*/ 0x3e,0x8,0x4,0x3e,
+	/*O*/ 0x1c,0x22,0x22,0x1c,
+	/*P*/ 0xc,0x12,0x12,0x3e,
+	/*Q*/ 0x5c,0x22,0x22,0x1c,
+	/*R*/ 0x2c,0x12,0x12,0x3e,
+	/*S*/ 0x12,0x2a,0x2a,0x24,
+	/*T*/ 0x2,0x3e,0x2,
+	/*U*/ 0x1e,0x20,0x20,0x1e,
+	/*V*/ 0x6,0x18,0x20,0x1e,
+	/*W*/ 0x1e,0x20,0x1c,0x20,0x1e,
+	/*X*/ 0x36,0x8,0x8,0x36,
+	/*Y*/ 0x1e,0x28,0x28,0x6,
+	/*Z*/ 0x26,0x2a,0x32,
+	/*[*/ 0x22,0x3e,
+	/*\*/ 0x20,0x10,0x8,0x4,0x2,
+	/*]*/ 0x3e,0x22,
+	/*^*/ 0x4,0x2,0x4,
+	/*_*/ 0x20,0x20,0x20,0x20,
+	/*`*/ 0x4,0x2,
+	/*a*/ 0x3c,0x24,0x24,0x18,
+	/*b*/ 0x18,0x24,0x24,0x3e,
+	/*c*/ 0x24,0x24,0x18,
+	/*d*/ 0x3e,0x24,0x24,0x18,
+	/*e*/ 0x8,0x2c,0x34,0x18,
+	/*f*/ 0xa,0x3c,0x8,
+	/*g*/ 0x7c,0xa4,0xa4,0x18,
+	/*h*/ 0x38,0x4,0x4,0x3e,
+	/*i*/ 0x3a,
+	/*j*/ 0x7a,0x80,
+	/*k*/ 0x24,0x18,0x10,0x3e,
+	/*l*/ 0x3e,
+	/*m*/ 0x38,0x4,0x3c,0x4,0x3c,
+	/*n*/ 0x38,0x4,0x4,0x3c,
+	/*o*/ 0x18,0x24,0x24,0x18,
+	/*p*/ 0x18,0x24,0x24,0xfc,
+	/*q*/ 0xfc,0x24,0x24,0x18,
+	/*r*/ 0x4,0x8,0x3c,
+	/*s*/ 0x14,0x34,0x2c,0x28,
+	/*t*/ 0x24,0x1e,0x4,
+	/*u*/ 0x3c,0x20,0x20,0x1c,
+	/*v*/ 0xc,0x10,0x20,0x1c,
+	/*w*/ 0xc,0x30,0xc,0x30,0xc,
+	/*x*/ 0x24,0x18,0x24,
+	/*y*/ 0x7c,0xa0,0xa0,0x1c,
+	/*z*/ 0x24,0x2c,0x34,0x24,
+	/*{*/ 0x22,0x36,0x8,
+	/*|*/ 0x3e,
+	/*}*/ 0x8,0x36,0x22,
+	/*~*/ 0x2,0x4,0x2,0x4,
+	/*˚*/ 0xC,0x12,0xC,
+ };
+
+ const uint16_t font_04B_03_offs[] PROGMEM = {
+	0,1,2,5,10,14,19,24,25,27,29,32,35,37,40,41,46,50,52,56,
+	60,64,68,72,76,80,84,85,86,89,92,95,99,104,108,112,115,119,122,125,
+	129,133,136,140,144,147,152,156,160,164,168,172,176,179,183,187,192,196,200,203,
+	205,210,212,215,219,221,225,229,232,236,240,243,247,251,252,254,258,259,264,268,
+	272,276,280,283,287,290,294,298,303,306,310,314,317,318,321,325,};
+
+const uint8_t font_04B_03_widths[] PROGMEM = {
+	1,1,3,5,4,5,5,1,2,2,3,3,2,3,1,5,4,2,4,4,
+	4,4,4,4,4,4,1,1,3,3,3,4,5,4,4,3,4,3,3,4,
+	4,3,4,4,3,5,4,4,4,4,4,4,3,4,4,5,4,4,3,2,
+	5,2,3,4,2,4,4,3,4,4,3,4,4,1,2,4,1,5,4,4,
+	4,4,3,4,3,4,4,5,3,4,4,3,1,3,4,3,};
+

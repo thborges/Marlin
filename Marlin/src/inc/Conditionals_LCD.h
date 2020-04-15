@@ -50,6 +50,12 @@
   #define LCD_CONTRAST_MAX 255
   #define LCD_HEIGHT 6
 
+#elif ENABLED(SSD1331_LCD)
+    #define IS_ULTIPANEL
+    #define IS_ULTRA_LCD
+    #define SMALL_LCD
+    #define LCD_HEIGHT 6
+
 #elif ENABLED(ZONESTAR_LCD)
 
   #define ADC_KEYPAD

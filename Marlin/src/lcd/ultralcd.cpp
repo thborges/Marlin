@@ -92,6 +92,8 @@ MarlinUI ui;
   #if ENABLED(NOKIA5110_LCD)
     #include <U8glib.h>
     #include "smallu8g/smallu8g_lcd_impl.h"
+  #elif ENABLED(SSD1331_LCD)
+    #include "small_lcd/smallucg_lcd_impl.h"
   #else
     #include "dogm/ultralcd_DOGM.h"
   #endif
@@ -1012,7 +1014,7 @@ void MarlinUI::update() {
         keypad_buttons = 0;
       #endif
 
-      #if HAS_GRAPHICAL_LCD
+      #if EITHER(DOGLCD, NOKIA5110_LCD)
 
         #if ENABLED(LIGHTWEIGHT_UI)
           const bool in_status = on_status_screen(),

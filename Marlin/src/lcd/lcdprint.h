@@ -12,7 +12,7 @@
 
 #include "../inc/MarlinConfig.h"
 
-#if HAS_GRAPHICAL_LCD
+#if ENABLED(DOGLCD)
   #include "dogm/u8g_fontutf8.h"
   typedef u8g_uint_t lcd_uint_t;
 #else
