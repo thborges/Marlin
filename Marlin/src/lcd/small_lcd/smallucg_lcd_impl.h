@@ -59,15 +59,8 @@
   //#error "Currently, only hardware SPI is supported."
 #endif
 
-#define LCD_PIXEL_WIDTH 96
-#define LCD_PIXEL_HEIGHT 64
-
 #define FONT_TEXT_NAME ucg_font_04b_03_hr
-#define FONT_CHAR_HEIGHT 7
-#define FONT_CHAR_WIDTH 5
 
-#define MENU_FONT_WIDTH FONT_CHAR_WIDTH
-#define MENU_FONT_HEIGHT FONT_CHAR_HEIGHT
 uint8_t constexpr row_height = FONT_CHAR_HEIGHT + 3;
 
 // status screen block width: icon plus three chars and two spaces

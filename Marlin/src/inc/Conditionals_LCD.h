@@ -55,6 +55,12 @@
     #define IS_ULTRA_LCD
     #define SMALL_LCD
     #define LCD_HEIGHT 6
+    #define LCD_PIXEL_WIDTH 96
+    #define LCD_PIXEL_HEIGHT 64
+    #define FONT_CHAR_HEIGHT 7
+    #define FONT_CHAR_WIDTH 5
+    #define MENU_FONT_WIDTH FONT_CHAR_WIDTH
+    #define MENU_FONT_HEIGHT FONT_CHAR_HEIGHT
 
 #elif ENABLED(ZONESTAR_LCD)
 

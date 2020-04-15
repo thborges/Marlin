@@ -46,7 +46,7 @@
 
   #include "../../feature/babystep.h"
   #include "../lcdprint.h"
-  #if HAS_GRAPHICAL_LCD
+  #if EITHER(DOGLCD, NOKIA1510_LCD)
     #include "../dogm/ultralcd_DOGM.h"
   #endif
 
