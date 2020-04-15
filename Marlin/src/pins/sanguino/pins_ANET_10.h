@@ -172,6 +172,29 @@
     #define SLCD_DAT_PIN   29
   #endif
 
+#elif ENABLED(SSD1331_LCD)
+    // Filament runout sensor
+    #define FIL_RUNOUT_PIN 28 //27
+    
+    // encoder
+    #define BTN_EN1        27 //10
+    #define BTN_EN2        10 //11
+    #define BTN_ENC        29 //30
+
+    // lcd
+    #define SLCD_CS_PIN     16 //29
+    #define SLCD_RST_PIN    11 //28
+
+    #define HARDWARE_SPI
+    #if ENABLED(HARDWARE_SPI)
+      #define BEEPER_PIN     30 //16
+      #define SLCD_FREE_PIN  17
+    #else
+      #define SLCD_DAT_PIN  16
+      #define SLCD_CLK_PIN  17
+    #endif
+      
+
 #elif HAS_SPI_LCD
   #define LCD_SDSS           28
   #if ENABLED(ADC_KEYPAD)
