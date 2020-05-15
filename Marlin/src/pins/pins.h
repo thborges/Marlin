@@ -516,6 +516,8 @@
   #include "stm32f1/pins_MKS_ROBIN_LITE3.h"     // STM32F1                                env:mks_robin_lite3
 #elif MB(MKS_ROBIN_PRO)
   #include "stm32f1/pins_MKS_ROBIN_PRO.h"       // STM32F1                                env:mks_robin_pro
+#elif MB(BLUEPILL)
+  #include "stm32f1/pins_BLUE_PILL.h"           // STM32F103CB                            env:stm32_bluepill
 
 //
 // ARM Cortex-M4F

@@ -13,6 +13,8 @@
 
 #include "ssd1331_ga.h"
 
+#if ENABLED(SSD1331_LCD)
+
 #define sendX(x) send((x) > 95 ? 95 : x)
 #define sendY(y) send((y) > 63 ? 63 : y)
 #define SEND_COLOR(i) send(curr_color[i].red & 0b00111110); send(curr_color[i].green & 0b00111111); send(curr_color[i].blue & 0b00111110)
@@ -233,3 +235,5 @@ void SSD1331GA::clearRect(const uint8_t x, const uint8_t y, const uint8_t w, con
   sendX(x); sendY(y); sendX(x+w); sendY(y+h);
   *data_port_cs |= data_mask_cs;            // CS high
 }
+
+#endif

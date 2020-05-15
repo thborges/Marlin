@@ -16,6 +16,8 @@
 #include "../../inc/MarlinConfigPre.h"
 #include "../../HAL/HAL.h"
 
+#if ENABLED(SSD1331_LCD)
+
 #define HARDWARE_SPI
 
 // Initialization sequence
@@ -251,3 +253,5 @@ const uint8_t font_04B_03_widths[] PROGMEM = {
 	5,2,3,4,2,4,4,3,4,4,3,4,4,1,2,4,1,5,4,4,
 	4,4,3,4,3,4,4,5,3,4,4,3,1,3,4,3,};
 
+
+#endif
