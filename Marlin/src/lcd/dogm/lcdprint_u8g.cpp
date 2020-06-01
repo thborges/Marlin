@@ -9,7 +9,7 @@
 
 #include "../../inc/MarlinConfigPre.h"
 
-#if EITHER(DOGLCD, NOKIA1510_LCD)
+#if ENABLED(DOGLCD)
 
 #include "ultralcd_DOGM.h"
 
@@ -53,4 +53,4 @@ int lcd_put_u8str_max_P(PGM_P utf8_str_P, pixel_len_t max_length) {
   return ret;
 }
 
-#endif // EITHER(DOGLCD, NOKIA1510_LCD)
+#endif // ENABLED(DOGLCD)

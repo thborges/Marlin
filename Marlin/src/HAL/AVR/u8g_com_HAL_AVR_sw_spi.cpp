@@ -57,7 +57,7 @@
 
 #include "../../inc/MarlinConfigPre.h"
 
-#if EITHER(DOGLCD, NOKIA1510_LCD)
+#if ENABLED(DOGLCD)
 
 #include "../shared/Marduino.h"
 #include "../shared/Delay.h"
