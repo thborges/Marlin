@@ -22,21 +22,21 @@
 #pragma once
 
 /**
- * MALYAN M200 pin assignments
+ * BLUE PILL pin assignments
  */
 
 #if NONE(__STM32F1__, STM32F1xx, STM32F0xx)
   #error "Oops! Select an STM32 board in your IDE."
 #endif
 
-#define BOARD_INFO_NAME "Malyan M200"
+#define BOARD_INFO_NAME "Blue pill custom board"
 
 // Enable EEPROM Emulation for this board
 // This setting should probably be in configuration.h
 // but it is literally the only board which uses it.
 #define FLASH_EEPROM_EMULATION
 
-#define SDSS                              SS_PIN
+//#define SDSS                              SS_PIN
 
 // Based on PWM timer usage, we have to use these timers and soft PWM for the fans
 // On STM32F103:
@@ -51,7 +51,7 @@
 // Limit Switches
 //
 #define X_MIN_PIN                           PB4
-#define Y_MIN_PIN                           PA15
+#define Y_MAX_PIN                           PA15
 #define Z_MIN_PIN                           PB5
 
 //
@@ -59,34 +59,50 @@
 //
 // X & Y enable are the same
 #define X_STEP_PIN                          PB14
-#define X_DIR_PIN                           PB15
+#define X_DIR_PIN                           PB8
 #define X_ENABLE_PIN                        PA8
 
 #define Y_STEP_PIN                          PB12
-#define Y_DIR_PIN                           PB13
-#define Y_ENABLE_PIN                        PA8
+#define Y_DIR_PIN                           PB9
+#define Y_ENABLE_PIN                        PA3
 
 #define Z_STEP_PIN                          PB10
-#define Z_DIR_PIN                           PB2
+#define Z_DIR_PIN                           PC14
 #define Z_ENABLE_PIN                        PB11
 
 #define E0_STEP_PIN                         PB0
-#define E0_DIR_PIN                          PC13
+#define E0_DIR_PIN                          PC15
 #define E0_ENABLE_PIN                       PB1
 
 //
-// Temperature Sensors
-//
-#define TEMP_0_PIN                          PA0   // Analog Input (HOTEND0 thermistor)
-#define TEMP_BED_PIN                        PA1   // Analog Input (BED thermistor)
-
-//
-// Heaters / Fans
+// Heaters and temperature sensors
 //
 #define HEATER_0_PIN                        PB6   // HOTEND0 MOSFET
-#define HEATER_BED_PIN                      PB7   // BED MOSFET
+#define TEMP_0_PIN                          PA0   // Analog Input (HOTEND0 thermistor)
 
-#define MALYAN_FAN1_PIN                     PB8   // FAN1 header on board - PRINT FAN
-#define MALYAN_FAN2_PIN                     PB3   // FAN2 header on board - CONTROLLER FAN
+// Heater 0 switched on/off by a 10V mosfet driven by a NPN transistor. There's a 100K pull-up resistor on transistor base.
+// 0v = enabled
+// 3-5v = disabled
+#define HEATER_0_INVERTING true                     
 
-#define FAN1_PIN                 MALYAN_FAN2_PIN
+//#define HEATER_BED_PIN                      PB7   // BED MOSFET
+//#define TEMP_BED_PIN                        PA1   // Analog Input (BED thermistor)
+
+//#define MALYAN_FAN1_PIN                     PB8   // FAN1 header on board - PRINT FAN
+
+#define FAN_PIN       PB3
+#define BEEPER_PIN    PB15
+
+#define SLCD_CLK_PIN  PA7
+#define SLCD_DAT_PIN  PA6
+#define SLCD_DC_PIN   PA5
+#define SLCD_CS_PIN   PA4
+
+#define BTN_EN1 PA11
+#define BTN_EN2 PA12
+#define BTN_ENC PC13
+
+//#define LED_PIN PC13
+
+//#define SOFTWARE_SPI
+//#define HARDWARE_SPI
