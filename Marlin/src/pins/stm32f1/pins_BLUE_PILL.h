@@ -32,77 +32,72 @@
 #define BOARD_INFO_NAME "Blue pill custom board"
 
 // Enable EEPROM Emulation for this board
-// This setting should probably be in configuration.h
-// but it is literally the only board which uses it.
 #define FLASH_EEPROM_EMULATION
 
 //#define SDSS                              SS_PIN
 
-// Based on PWM timer usage, we have to use these timers and soft PWM for the fans
-// On STM32F103:
-// PB3, PB6, PB7, and PB8 can be used with pwm, which rules out TIM2 and TIM4.
-// On STM32F070, 16 and 17 are in use, but 1 and 3 are available.
-#undef STEP_TIMER
-#undef TEMP_TIMER
-#define STEP_TIMER 1
-#define TEMP_TIMER 3
-
 //
 // Limit Switches
 //
-#define X_MIN_PIN                           PB4
-#define Y_MAX_PIN                           PA15
+#define X_MIN_PIN                           PB7
+#define Y_MAX_PIN                           PB6
 #define Z_MIN_PIN                           PB5
 
 //
 // Steppers
 //
 // X & Y enable are the same
-#define X_STEP_PIN                          PB14
-#define X_DIR_PIN                           PB8
-#define X_ENABLE_PIN                        PA8
+#define X_STEP_PIN                          PA7
+#define X_DIR_PIN                           PA6
+#define X_ENABLE_PIN                        PB0
 
-#define Y_STEP_PIN                          PB12
-#define Y_DIR_PIN                           PB9
-#define Y_ENABLE_PIN                        PA3
+#define Y_STEP_PIN                          PA5
+#define Y_DIR_PIN                           PA4
+#define Y_ENABLE_PIN                        PB0
 
-#define Z_STEP_PIN                          PB10
+#define Z_STEP_PIN                          PC15
 #define Z_DIR_PIN                           PC14
-#define Z_ENABLE_PIN                        PB11
+#define Z_ENABLE_PIN                        PA0
 
-#define E0_STEP_PIN                         PB0
-#define E0_DIR_PIN                          PC15
-#define E0_ENABLE_PIN                       PB1
+#define E0_STEP_PIN                         PB10
+#define E0_DIR_PIN                          PB1
+#define E0_ENABLE_PIN                       PB11
 
 //
 // Heaters and temperature sensors
 //
-#define HEATER_0_PIN                        PB6   // HOTEND0 MOSFET
-#define TEMP_0_PIN                          PA0   // Analog Input (HOTEND0 thermistor)
+#define HEATER_0_PIN                        PA1   // HOTEND0 MOSFET
+#define TEMP_0_PIN                          PA2   // Analog Input (HOTEND0 thermistor)
 
 // Heater 0 switched on/off by a 10V mosfet driven by a NPN transistor. There's a 100K pull-up resistor on transistor base.
 // 0v = enabled
 // 3-5v = disabled
 #define HEATER_0_INVERTING true                     
 
-//#define HEATER_BED_PIN                      PB7   // BED MOSFET
-//#define TEMP_BED_PIN                        PA1   // Analog Input (BED thermistor)
+#define HEATER_BED_PIN                      PC13   // BED MOSFET
+#define TEMP_BED_PIN                        PA3   // Analog Input (BED thermistor)
 
 //#define MALYAN_FAN1_PIN                     PB8   // FAN1 header on board - PRINT FAN
 
-#define FAN_PIN       PB3
-#define BEEPER_PIN    PB15
+#define FAN_PIN       PB9
+#define BEEPER_PIN    PB8
 
-#define SLCD_CLK_PIN  PA7
-#define SLCD_DAT_PIN  PA6
-#define SLCD_DC_PIN   PA5
-#define SLCD_CS_PIN   PA4
+#define SLCD_CLK_PIN  PA8
+#define SLCD_DAT_PIN  PB13
+#define SLCD_DC_PIN   PB15
+#define SLCD_CS_PIN   PB14
 
-#define BTN_EN1 PA11
-#define BTN_EN2 PA12
-#define BTN_ENC PC13
+#define BTN_EN1 PB3
+#define BTN_EN2 PA15
+#define BTN_ENC PB4
 
 //#define LED_PIN PC13
 
 //#define SOFTWARE_SPI
 //#define HARDWARE_SPI
+
+// Disable DEBUG to free some IO pins, like PB3
+#define DISABLE_DEBUG
+
+// Use software PWM to prevent timers clash
+#define FAN_SOFT_PWM

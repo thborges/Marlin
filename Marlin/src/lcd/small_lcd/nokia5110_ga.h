@@ -21,14 +21,11 @@
 // Initialization sequence
 const unsigned char NOKIA5110_init[] PROGMEM = {
   0x21, // extended commands
-  0xB0, // LCD Vop (contrast)
   0x04, // Temperature coeficient
-  0x14, // LCD Bias 1:48
+  0x10, // LCD Bias 1:48
+  0x80 | 70, // LCD Vop (contrast)
   0x20, // modify display control
   0x0C, // display control normal
-  0x21,
-  0x80 | 54,
-  0x20,
 };
 
 constexpr int NOKIA5110_init_len = sizeof(NOKIA5110_init);
@@ -42,12 +39,12 @@ struct font_index { uint16_t offset; uint8_t bytes; };
 class NOKIA5110GA {
 private:
     uint8_t CLK_PIN, DATA_PIN;
-    volatile uint32_t *data_port_clk, *data_port_dat;
-    uint8_t data_mask_clk, data_mask_dat;
+    //volatile uint32_t *data_port_clk, *data_port_dat;
+    //uint8_t data_mask_clk, data_mask_dat;
     
     uint8_t CS_PIN, DC_PIN;
-    volatile uint32_t *data_port_dc, *data_port_cs;
-    uint8_t data_mask_dc, data_mask_cs;
+    //volatile uint32_t *data_port_dc, *data_port_cs;
+    //uint8_t data_mask_dc, data_mask_cs;
 
     const uint16_t *curr_font_offsets;
 	const uint8_t *curr_font_widths;
@@ -56,11 +53,10 @@ private:
     volatile uint8_t curr_x, curr_y, curr_color;
 
 	inline int8_t get_char_width(const char c);
-
     inline void send(uint8_t d, bool is_data = true);
 
 public:
-    NOKIA5110GA(const uint8_t CLK, const uint8_t DAT, const uint8_t CS, const uint8_t EN);
+    NOKIA5110GA(const uint8_t CLK, const uint8_t DAT, const uint8_t CS, const uint8_t DC);
     
     void begin();
     void setColor(const COLOR_INDEX idx);
@@ -90,6 +86,8 @@ public:
 
     uint8_t getHeight() { return 48; }
     uint8_t getWidth() { return 84; };
+
+	void setContrast(const int16_t c);
 };
 
 /*

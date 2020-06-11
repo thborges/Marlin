@@ -211,10 +211,11 @@ const uint8_t file_icon[] PROGMEM = {
   };
  
   void MarlinUI::show_bootscreen() {
+    ucg.setContrast(70); // don't know why, but at this point contrast setting were not loaded
     ucg.drawBitmapP(14, 1, start_bmp, 3, sizeof(start_bmp));
     uint8_t w = ucg.drawString(0, 5, SHORT_BUILD_VERSION);
     ucg.drawString(w+2, 5, STRING_CONFIG_H_AUTHOR);
-    safe_delay(1000);
+    safe_delay(BOOTSCREEN_TIMEOUT);
     clear_lcd();
   }
 #endif // SHOW_BOOTSCREEN
@@ -298,9 +299,9 @@ void MarlinUI::draw_status_screen() {
   // fan0
   #if HAS_FAN0
     ucg.drawBitmapP(cx, cy, fan_icon, 2, sizeof(fan_icon));
-    ucg.drawString(cx + ICON_WIDTH + 2, cy + 1, "%");
+    ucg.drawString(cx + ICON_WIDTH, cy + 1, "%");
     const int16_t per = ((thermalManager.fan_speed[0] + 1) * 100) / 256;
-    write_str_fill_width(cx + ICON_WIDTH + 2, cy, i16tostr3left(per), BLOCK_TXT_WIDTH);
+    write_str_fill_width(cx + ICON_WIDTH, cy, i16tostr3left(per), BLOCK_TXT_WIDTH);
     SCR_BLOCK_POS_CTRL;
   #endif
 
@@ -365,7 +366,7 @@ void MarlinUI::draw_status_screen() {
     else { // string larger than screen width
       uint8_t rlen;
       const char *stat = status_and_len(rlen);
-      write_str_fill_width(0, cy, stat, LCD_PIXEL_WIDTH-1);
+      write_str_fill_width(0, cy, stat, LCD_PIXEL_WIDTH);
       bool blink = get_blink();
       if (last_blink != blink) {
         last_blink = blink;
@@ -378,6 +379,7 @@ void MarlinUI::draw_status_screen() {
 // Initialize or re-initialize the LCD
 void MarlinUI::init_lcd() {
   ucg.begin();
+  refresh_contrast();
   drawing_screen = false;
   first_page = true;  // u8g concept, but scrolling in menus depend on this
 }
@@ -528,6 +530,18 @@ void MarlinUI::clear_lcd() {
     }
 
   #endif // SDSUPPORT
+
+  #if HAS_LCD_CONTRAST
+
+  int16_t MarlinUI::contrast = DEFAULT_LCD_CONTRAST;
+
+  void MarlinUI::set_contrast(const int16_t value) {
+    contrast = constrain(value, LCD_CONTRAST_MIN, LCD_CONTRAST_MAX);
+    ucg.setContrast(contrast);
+  }
+
+  #endif
+
 
 #endif // HAS_LCD_MENU
 

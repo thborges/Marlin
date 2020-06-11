@@ -45,9 +45,9 @@
   #define IS_ULTIPANEL
   #define IS_ULTRA_LCD
   #define SMALL_LCD
-  #define DEFAULT_LCD_CONTRAST 120
-  #define LCD_CONTRAST_MIN 0
-  #define LCD_CONTRAST_MAX 255
+  #define _LCD_CONTRAST_INIT 60
+  #define _LCD_CONTRAST_MIN 0
+  #define _LCD_CONTRAST_MAX 127
   #define LCD_HEIGHT 6
   #define LCD_PIXEL_WIDTH 84
   #define LCD_PIXEL_HEIGHT 48

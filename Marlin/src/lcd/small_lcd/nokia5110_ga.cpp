@@ -12,53 +12,41 @@
 #if ENABLED(NOKIA5110_LCD)
 
 NOKIA5110GA::NOKIA5110GA(const uint8_t CLK, const uint8_t DAT, const uint8_t CS, const uint8_t DC) {
-    
-    CLK_PIN = CLK;
-    DATA_PIN = DAT;
-    data_port_clk = portOutputRegister(digitalPinToPort(CLK_PIN));
-    data_mask_clk = digitalPinToBitMask(CLK_PIN);
-    data_port_dat = portOutputRegister(digitalPinToPort(DATA_PIN));
-    data_mask_dat = digitalPinToBitMask(DATA_PIN);
+  CLK_PIN = CLK;
+  DATA_PIN = DAT;
+  CS_PIN = CS;
+  DC_PIN = DC;
 
-    CS_PIN = CS;
-    DC_PIN = DC;
-    data_port_cs = portOutputRegister(digitalPinToPort(CS_PIN));
-    data_mask_cs = digitalPinToBitMask(CS_PIN);
-    data_port_dc = portOutputRegister(digitalPinToPort(DC_PIN));
-    data_mask_dc = digitalPinToBitMask(DC_PIN);
+  SET_OUTPUT(CLK_PIN);
+  SET_OUTPUT(DATA_PIN);
+  SET_OUTPUT(CS_PIN);
+  SET_OUTPUT(DC_PIN);
+  WRITE(CLK_PIN, HIGH);
+  WRITE(DATA_PIN, HIGH);
+  WRITE(CS_PIN, HIGH);
+  WRITE(DC_PIN, HIGH);
 
-    curr_x = curr_y = 0;
-    curr_color = CI_FOREGROUND;
+  curr_x = curr_y = 0;
+  curr_color = CI_FOREGROUND;
     
-    curr_font_offsets = font_04B_03_offs;
-    curr_font_widths = font_04B_03_widths;
-    curr_font_bitmaps = font_04B_03_bitmaps;
+  curr_font_offsets = font_04B_03_offs;
+  curr_font_widths = font_04B_03_widths;
+  curr_font_bitmaps = font_04B_03_bitmaps;
 }
 
 void NOKIA5110GA::begin() {
 
-  pinMode(CLK_PIN, OUTPUT);
-  pinMode(DATA_PIN, OUTPUT);
-  digitalWrite(CLK_PIN, HIGH);
-  digitalWrite(DATA_PIN, HIGH);
-
-  pinMode(CS_PIN, OUTPUT);
-  digitalWrite(CS_PIN, HIGH);
-  pinMode(DC_PIN, OUTPUT);
-  digitalWrite(DC_PIN, HIGH);
-  delay(1);
-
   // init display
-  *data_port_cs &= ~data_mask_cs;            // CS low
+  WRITE(CS_PIN, LOW);
   for (uint8_t c=0; c < NOKIA5110_init_len; c++)
       send(pgm_read_byte(&NOKIA5110_init[c]), false);
-  *data_port_cs |= data_mask_cs;            // CS high
+  WRITE(CS_PIN, HIGH);
 
   clearScreen();
 }
 
 void NOKIA5110GA::clearScreen() {
-  *data_port_cs &= ~data_mask_cs;            // CS low
+  WRITE(CS_PIN, LOW);
   curr_x = 0;
   curr_y = 0;
   send(0x80 | curr_x, false);  // Column
@@ -68,25 +56,25 @@ void NOKIA5110GA::clearScreen() {
       send(0);
     }
   }
-  *data_port_cs |= data_mask_cs;            // CS high
+  WRITE(CS_PIN, HIGH);
 }
 
 inline void NOKIA5110GA::send(uint8_t d, bool is_data) {
   if (is_data) {
     if (curr_color == CI_BACKGROUND)
       d ^= 0b11111111; // flip d
-    *data_port_dc |= data_mask_dc; // data HIGH
+    WRITE(DC_PIN, HIGH);
   }
   else
-    *data_port_dc &= ~data_mask_dc; // command LOW
+    WRITE(DC_PIN, LOW);
 
   for (uint8_t bit = 0x80; bit; bit >>= 1) {
-    *data_port_clk &= ~data_mask_clk; // clk low
+    WRITE(CLK_PIN, LOW);
     if (d & bit) 
-      *data_port_dat |= data_mask_dat;
+      WRITE(DATA_PIN, HIGH);
     else
-      *data_port_dat &= ~data_mask_dat;
-    *data_port_clk |= data_mask_clk; // clk high
+      WRITE(DATA_PIN, LOW);
+     WRITE(CLK_PIN, HIGH);
   }
 }
 
@@ -131,7 +119,7 @@ void NOKIA5110GA::draw_char(const char c, bool sep) {
 }
 
 uint8_t NOKIA5110GA::printP(const char *pstr) {
-  *data_port_cs &= ~data_mask_cs;           // CS low
+  WRITE(CS_PIN, LOW);
   uint8_t oldx = curr_x;
   send(0x80 | curr_x, false);  // Column
   send(0x40 | curr_y, false);  // Row
@@ -141,12 +129,12 @@ uint8_t NOKIA5110GA::printP(const char *pstr) {
     draw_char(c, cn != 0);
     c = cn;
   }  
-  *data_port_cs |= data_mask_cs;            // CS high
+  WRITE(CS_PIN, HIGH);
   return curr_x - oldx;
 }
     
 uint8_t NOKIA5110GA::print(const char *str) {
-  *data_port_cs &= ~data_mask_cs;           // CS low
+  WRITE(CS_PIN, LOW);
   uint8_t oldx = curr_x;
   send(0x80 | curr_x, false);  // Column
   send(0x40 | curr_y, false);  // Row
@@ -154,7 +142,7 @@ uint8_t NOKIA5110GA::print(const char *str) {
     draw_char(str[0], str[1] != 0);
     str++;
   }
-  *data_port_cs |= data_mask_cs;            // CS high
+  WRITE(CS_PIN, HIGH);
   return curr_x - oldx;
 }
 
@@ -183,7 +171,7 @@ uint8_t NOKIA5110GA::stringWidthP(const char *pstr) {
 }
 
 void NOKIA5110GA::drawPBar(const uint8_t w, const uint8_t p) {
-  *data_port_cs &= ~data_mask_cs;           // CS low
+  WRITE(CS_PIN, LOW);
   send(0x80 | curr_x, false);  // Column
   send(0x40 | curr_y, false);  // Row
 
@@ -194,11 +182,11 @@ void NOKIA5110GA::drawPBar(const uint8_t w, const uint8_t p) {
     else
       send(0b01000001);
   }
-  *data_port_cs |= data_mask_cs;            // CS high
+  WRITE(CS_PIN, HIGH);
 }
 
 void NOKIA5110GA::drawBitmapP(uint8_t off_x, uint8_t off_y, const uint8_t *bmp, const uint8_t byte_width, const uint8_t bmp_bytes) {
-  *data_port_cs &= ~data_mask_cs;           // CS low
+  WRITE(CS_PIN, LOW);
   send(0x80 | off_x, false);  // Column
   send(0x40 | off_y, false);  // Row
   send(0x22, false); // vertical mode
@@ -218,7 +206,7 @@ void NOKIA5110GA::drawBitmapP(uint8_t off_x, uint8_t off_y, const uint8_t *bmp, 
   } while (b < bmp_bytes / sizeof(uint8_t));
   
   send(0x20, false); // horizontal mode
-  *data_port_cs |= data_mask_cs;            // CS high
+  WRITE(CS_PIN, HIGH);
 }
 
 void NOKIA5110GA::setFont(const uint16_t *font_offsets, const uint8_t *font_widths, const uint8_t *font_bitmaps) {
@@ -228,14 +216,21 @@ void NOKIA5110GA::setFont(const uint16_t *font_offsets, const uint8_t *font_widt
 }
 
 void NOKIA5110GA::clearRect(const uint8_t x, const uint8_t y, uint8_t w) {
-  *data_port_cs &= ~data_mask_cs;           // CS low
+  WRITE(CS_PIN, LOW);
   send(0x80 | x, false);  // Column
   send(0x40 | y, false);  // Row
   if ((y + w) > getWidth())
     w = getWidth() - y;
   while(w--)
     send(0);
-  *data_port_cs |= data_mask_cs;            // CS high
+  WRITE(CS_PIN, HIGH);
 }
 
+void NOKIA5110GA::setContrast(const int16_t c) {
+  WRITE(CS_PIN, LOW);
+  send(0x21, false);
+  send(0x80 | c, false);
+  send(0x20, false);
+  WRITE(CS_PIN, HIGH);
+}
 #endif
