@@ -1,11 +1,7 @@
 /*
- * A Driver to SSD1331 Color OLED Display
- * Uses the device buit-in Graphics Acceleration feature
+ * A simple driver to PCD8544 a.k.a. NOKIA5110 LCD display controller
  * 
  * Author: Thiago Borges de Oliveira (thborges@gmail.com)
- * 
- * Based on Colour Graphics Library developed by David Johnson-Davies
- * http://www.technoblogy.com/show?2EA7
  * 
  * CC BY 4.0, Licensed under a Creative Commons Attribution 4.0 International license: 
  * http://creativecommons.org/licenses/by/4.0/
@@ -13,8 +9,7 @@
 
 #pragma once
 
-#include "../../inc/MarlinConfigPre.h"
-#include "../../HAL/HAL.h"
+#include "../../inc/MarlinConfig.h"
 
 #if ENABLED(NOKIA5110_LCD)
 
@@ -38,14 +33,6 @@ struct font_index { uint16_t offset; uint8_t bytes; };
 
 class NOKIA5110GA {
 private:
-    uint8_t CLK_PIN, DATA_PIN;
-    //volatile uint32_t *data_port_clk, *data_port_dat;
-    //uint8_t data_mask_clk, data_mask_dat;
-    
-    uint8_t CS_PIN, DC_PIN;
-    //volatile uint32_t *data_port_dc, *data_port_cs;
-    //uint8_t data_mask_dc, data_mask_cs;
-
     const uint16_t *curr_font_offsets;
 	const uint8_t *curr_font_widths;
     const uint8_t *curr_font_bitmaps;
@@ -56,12 +43,12 @@ private:
     inline void send(uint8_t d, bool is_data = true);
 
 public:
-    NOKIA5110GA(const uint8_t CLK, const uint8_t DAT, const uint8_t CS, const uint8_t DC);
+    NOKIA5110GA();
     
     void begin();
     void setColor(const COLOR_INDEX idx);
     
-    uint8_t print(const char *str);
+    uint8_t print(const char *str, const bool space = false);
     uint8_t printP(const char *pstr);
 
     void draw_char(const char c, bool sep);
@@ -84,8 +71,8 @@ public:
     
     void clearScreen();
 
-    uint8_t getHeight() { return 48; }
-    uint8_t getWidth() { return 84; };
+    constexpr uint8_t getHeight() { return 48; };
+    constexpr uint8_t getWidth() { return 84; };
 
 	void setContrast(const int16_t c);
 };
@@ -95,6 +82,7 @@ public:
   Copyright: 19992003 / yuji oshimo�o / 04@dsg4.com / www.04.jp.org
   from char 32 to 127
   width 5, height 7
+  Some modifications to improve on small screens by Thiago Borges de Oliveira
 */
 const uint8_t font_04B_03_bitmaps[] PROGMEM = {
   	/* */ 0x0,
@@ -112,7 +100,7 @@ const uint8_t font_04B_03_bitmaps[] PROGMEM = {
 	/*,*/ 0x20,0x40,
 	/*-*/ 0x8,0x8,0x8,
 	/*.*/ 0x20,
-	/*/*/ 0x2,0x4,0x8,0x10,0x20,
+	/*/*/ 0x6,0x8,0x30, //0x2,0x4,0x8,0x10,0x20,
 	/*0*/ 0x1c,0x22,0x22,0x1c,
 	/*1*/ 0x3e,0x2,
 	/*2*/ 0x24,0x2a,0x2a,0x32,
@@ -196,14 +184,15 @@ const uint8_t font_04B_03_bitmaps[] PROGMEM = {
  };
 
  const uint16_t font_04B_03_offs[] PROGMEM = {
-	0,1,2,5,10,14,19,24,25,27,29,32,35,37,40,41,46,50,52,56,
-	60,64,68,72,76,80,84,85,86,89,92,95,99,104,108,112,115,119,122,125,
-	129,133,136,140,144,147,152,156,160,164,168,172,176,179,183,187,192,196,200,203,
-	205,210,212,215,219,221,225,229,232,236,240,243,247,251,252,254,258,259,264,268,
-	272,276,280,283,287,290,294,298,303,306,310,314,317,318,321,325,};
+    0,1,2,5,10,14,19,24,25,27,29,32,35,37,40,41,44,48,50,54,
+	58,62,66,70,74,78,82,83,84,87,90,93,97,102,106,110,113,117,
+	120,123,127,131,134,138,142,145,150,154,158,162,166,170,174,
+	177,181,185,190,194,198,201,203,208,210,213,217,219,223,227,
+	230,234,238,241,245,249,250,252,256,257,262,266,270,274,278,
+	281,285,288,292,296,301,304,308,312,315,316,319,323,};
 
 const uint8_t font_04B_03_widths[] PROGMEM = {
-	1,1,3,5,4,5,5,1,2,2,3,3,2,3,1,5,4,2,4,4,
+	1,1,3,5,4,5,5,1,2,2,3,3,2,3,1,3,4,2,4,4,
 	4,4,4,4,4,4,1,1,3,3,3,4,5,4,4,3,4,3,3,4,
 	4,3,4,4,3,5,4,4,4,4,4,4,3,4,4,5,4,4,3,2,
 	5,2,3,4,2,4,4,3,4,4,3,4,4,1,2,4,1,5,4,4,

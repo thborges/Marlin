@@ -502,6 +502,7 @@ bool MarlinUI::get_blink() {
   #endif
 #endif
 
+#if !ENABLED(CUSTOM_STATUS_SCREEN)
 void MarlinUI::status_screen() {
 
   #if HAS_LCD_MENU
@@ -603,6 +604,7 @@ void MarlinUI::status_screen() {
 
   draw_status_screen();
 }
+#endif
 
 void MarlinUI::kill_screen(PGM_P lcd_error, PGM_P lcd_component) {
   init();

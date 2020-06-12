@@ -21,10 +21,10 @@
  */
 
 /**
- * smallucg_lcd_impl.h
+ * PCD8544 LCD implementation
  *
- * Graphic screen implementation for NOKIA 5110
- * by Thiago Borges de Oliveira, May 2020
+ * Graphic screen implementation for common NOKIA 5110 LCDs
+ * by Thiago Borges de Oliveira, @thborges, May 2020
  */
 
 #pragma once
@@ -33,95 +33,115 @@
 
 #if ENABLED(NOKIA5110_LCD)
 
+#define CUSTOM_STATUS_SCREEN
+
 #include "../../libs/numtostr.h"
 #include "../../sd/cardreader.h"
 #include "../../module/temperature.h"
 #include "../../module/printcounter.h"
+#include "../../module/planner.h"
+#include "../menu/menu.h"
 #include "nokia5110_ga.h"
 
 #if ENABLED(SDSUPPORT)
   #include "../../libs/duration_t.h"
 #endif
 
-#ifdef __STM32F1__
-  //#include "smallucg_HAL_AVR.h"
-  #include "nokia5110_ga.h"
-#else
-  #error "Currently, NOKIA5110 LCD only works with STM32F1 boards"
+#if ENABLED(ADVANCED_PAUSE_FEATURE)
+  #if DISABLED(FILAMENT_LOAD_UNLOAD_GCODES)
+  #error "Please enable FILAMENT_LOAD_UNLOAD_GCODES in Configuration_adv.h"
+  #endif
+
+  #if ENABLED(FILAMENT_RUNOUT_SENSOR)
+  #include "../../feature/runout.h"
+  #endif
 #endif
 
-NOKIA5110GA ucg(SLCD_CLK_PIN, SLCD_DAT_PIN, SLCD_CS_PIN, SLCD_DC_PIN);
+typedef enum { 
+  S_NONE,
+  S_MENU,
+  S_PRINT,
+  S_PAUSE,
+  S_STOP,
+  S_AUTOHOME,
+  S_PRHEAT1,
+  S_PRHEAT2,
+  S_COOLDOWN,
+  #if HAS_FILAMENT_SENSOR
+  S_FILAMENT,
+  #endif
+  S_NOZZLE1,
+  #if HOTENDS > 1
+  S_NOZZLE2,
+  #endif
+  #if HAS_HEATED_BED
+  S_BED,
+  #endif
+  #if ENABLED(BABYSTEPPING)
+  S_ZBABYSTEPPING,
+  #endif
+  S_FEEDRATE,
+  S_FLOW,
+  #if HAS_FAN0
+  S_FAN,
+  #endif
+  S_Z,
+  S_X,
+  S_Y,
+  S_LAST,
+} selected_item;
 
-#define FONT_TEXT_NAME ucg_font_04b_03_hr
+selected_item menu_selected = S_NONE;
 
-// status screen block width: icon plus three chars and two spaces
-#define BLOCK_WIDTH (ICON_WIDTH + FONT_CHAR_WIDTH*3 + 1)
-#define BLOCK_TXT_WIDTH  (FONT_CHAR_WIDTH*3 + 1)
+NOKIA5110GA lcd;
 
 bool MarlinUI::detected() { return true; }
 void MarlinUI::set_font(const MarlinFont font_nr) { }
 
-#define ICON_WIDTH 12
-#define ICON_HEIGHT 14
+#define ICON_WIDTH 8
 
 const uint8_t nozzle_icon[] PROGMEM = {
-0b00000001,0b11000000,
-0b00100011,0b11000000,
-0b00100010,0b00111110,
-0b00100110,0b00111110,
-0b00011100,0b00000110,
-0b00001100,0b00000110,
-0b00000110,0b00111110,
-0b00000010,0b00111110,
-0b00000011,0b11000000,
-0b00000001,0b11000000,
+0b00000000,
+0b00011000,
+0b00100111,
+0b01000001,
+0b01000001,
+0b00100111,
+0b00011000,
+0b00000000,
 };
 
 const uint8_t bed_icon[] PROGMEM = {
-0b00111000,0b00000000,
-0b00111000,0b00000000,
-0b00011000,0b00011000,
-0b00011001,0b00100100,
-0b00011000,0b11000010,
-0b00011000,0b00000000,
-0b00011000,0b00011000,
-0b00011001,0b00100100,
-0b00011000,0b11000010,
-0b00111000,0b00000000,
-0b00111000,0b00000000,
-0b00000000,0b00000000,
+0b01100000,
+0b00101010,
+0b00100101,
+0b00100000,
+0b00101010,
+0b00100101,
+0b01100000,
+0b00000000,
 };
 
 const uint8_t fan_icon[] PROGMEM = {
-0b00000000,0b01000000,
-0b00000100,0b11001000,
-0b00001100,0b10011100,
-0b00000110,0b10110000,
-0b00000011,0b11100000,
-0b00110001,0b11111100,
-0b00011111,0b11100110,
-0b00000001,0b11110000,
-0b00000011,0b01011000,
-0b00001110,0b01001100,
-0b00000100,0b01001000,
-0b00000000,0b11000000,
-0b00000000,0b10000000,
+0b00000110,
+0b01001100,
+0b01101000,
+0b00111110,
+0b00001011,
+0b00011001,
+0b00110000,
+0b00000000,
 };
 
-// it is supposed to be a velocimeter
 const uint8_t feedrate_icon[] PROGMEM = {
-0b00000000,0b10110000,
-0b00000000,0b00001000,
-0b00001110,0b00000000,
-0b00001110,0b00000010,
-0b00001111,0b00000010,
-0b00000001,0b10000110,
-0b00000000,0b01000110,
-0b00000000,0b00000110,
-0b00000000,0b00001100,
-0b00000001,0b11101100,
-0b00000001,0b11101000,
-0b00000001,0b11100000,
+0b01100011,
+0b01110001,
+0b00011011,
+0b00001001,
+0b00000010,
+0b01010100,
+0b01111000,
+0b00000000,
 };
 
 const uint8_t folder_icon[] PROGMEM = {
@@ -146,6 +166,132 @@ const uint8_t file_icon[] PROGMEM = {
 0b10000111,
 0b10000110,
 0b11111100,
+0b00000000,
+};
+
+const uint8_t fire_icon[] PROGMEM = {
+0b00000000,
+0b00011000,
+0b00100100,
+0b01001010,
+0b01010101,
+0b01001010,
+0b00100100,
+0b00011000,
+0b00000000,
+};
+
+const uint8_t cooldown_icon[] PROGMEM = {
+0b00000000,
+0b00100010,
+0b01101011,
+0b00011100,
+0b00110110,
+0b00011100,
+0b01101011,
+0b00100010,
+0b00000000,
+};
+
+const uint8_t flow_icon[] PROGMEM = {
+0b00000000,
+0b00101011,
+0b00001011,
+0b00101011,
+0b00001011,
+0b00101011,
+0b00000000,
+0b00000000,
+};
+
+const uint8_t spool_icon[] PROGMEM = {
+0b00011100,
+0b00100010,
+0b01001001,
+0b01010101,
+0b01001001,
+0b01100010,
+0b01011100,
+0b01000000,
+};
+
+const uint8_t clock_icon[] PROGMEM = {
+0b00011100,
+0b00100010,
+0b01000001,
+0b01001111,
+0b01001001,
+0b00100010,
+0b00011100,
+0b00000000,
+};
+
+const uint8_t print_icon[] PROGMEM = {
+0b00000000,
+0b01000000,
+0b01000110,
+0b01001011,
+0b01010000,
+0b01101011,
+0b01100110,
+0b01100000,
+0b00000000,
+};
+
+const uint8_t pause_icon[] PROGMEM = {
+0b00000000,
+0b00111110,
+0b00111110,
+0b00000000,
+0b00000000,
+0b00111110,
+0b00111110,
+0b00000000,
+};
+
+const uint8_t continue_icon[] PROGMEM = {
+0b00000000,
+0b00000000,
+0b01111110,
+0b00111100,
+0b00011000,
+0b00000000,
+0b00000000,
+0b00000000,
+};
+
+const uint8_t stop_icon[] PROGMEM = {
+0b00000000,
+0b00111110,
+0b00111110,
+0b00111110,
+0b00111110,
+0b00111110,
+0b00111110,
+0b00000000,
+};
+
+const uint8_t menu_icon[] PROGMEM = {
+0b00000000,
+0b00101010,
+0b00101010,
+0b00101010,
+0b00101010,
+0b00101010,
+0b00101010,
+0b00101010,
+0b00000000,
+};
+
+const uint8_t home_icon[] PROGMEM = {
+0b00000000,
+0b00001000,
+0b01110100,
+0b01111010,
+0b00010101,
+0b01111010,
+0b01110100,
+0b00001000,
 0b00000000,
 };
 
@@ -211,21 +357,21 @@ const uint8_t file_icon[] PROGMEM = {
   };
  
   void MarlinUI::show_bootscreen() {
-    ucg.setContrast(70); // don't know why, but at this point contrast setting were not loaded
-    ucg.drawBitmapP(14, 1, start_bmp, 3, sizeof(start_bmp));
-    uint8_t w = ucg.drawString(0, 5, SHORT_BUILD_VERSION);
-    ucg.drawString(w+2, 5, STRING_CONFIG_H_AUTHOR);
+    lcd.setContrast(70); // don't know why, but at this point contrast setting were not loaded
+    lcd.drawBitmapP(14, 1, start_bmp, 3, sizeof(start_bmp));
+    uint8_t w = lcd.drawString(0, 5, SHORT_BUILD_VERSION);
+    lcd.drawString(w+2, 5, STRING_CONFIG_H_AUTHOR);
     safe_delay(BOOTSCREEN_TIMEOUT);
     clear_lcd();
   }
 #endif // SHOW_BOOTSCREEN
 
 void lcd_moveto(const lcd_uint_t col, const lcd_uint_t row) { 
-  //ucg.setPrintPos(col, row);
+  //lcd.setPrintPos(col, row);
 }
 
 int lcd_put_u8str_max(const char * utf8_str, pixel_len_t max_length) {
-  ucg.print(utf8_str);
+  lcd.print(utf8_str);
   return 0;
 }
 
@@ -235,7 +381,7 @@ int lcd_put_wchar_max(wchar_t c, pixel_len_t max_length) {
     nc = (char)c;
   else
     nc = '?'; // utf8 char not supported
-  ucg.draw_char(nc, true);
+  lcd.draw_char(nc, true);
   return 1;*/
   return 0;
 }
@@ -246,120 +392,476 @@ void host_action_cancel() {
 }
 
 void write_str_fill_width(uint8_t cx, uint8_t cy, const char *str, uint8_t width) {
-  uint8_t adv = ucg.drawString(cx, cy, str);
+  uint8_t adv = lcd.drawString(cx, cy, str);
   if (adv < width) // clean remaining
-    ucg.clearRect(cx + adv, cy, width - adv);
+    lcd.clearRect(cx + adv, cy, width - adv);
 }
 
-void smallucg_draw_hotend_status(const int8_t e, const int16_t target, const float degree, 
+uint8_t nk_draw_hotend_status(const int8_t e, const int16_t target, const float degree, 
   const uint8_t cx, const uint8_t cy, const uint8_t icon[], const uint8_t icon_width, const uint8_t icon_size) {
 
-  const bool idle = thermalManager.hotend_idle[e].timed_out || target == 0;
-  ucg.drawBitmapP(cx, cy, icon, icon_width, icon_size);
-
+  lcd.drawBitmapP(cx, cy, icon, icon_width, icon_size);
   uint8_t left = cx + ICON_WIDTH;
-  if (idle)
-    //font has speciall coded upper o, i.e., ˚ in pos 127
-    write_str_fill_width(left, cy+1, "\x7F""C", BLOCK_TXT_WIDTH);
-  else
-    write_str_fill_width(left, cy+1, i16tostr3left(target), BLOCK_TXT_WIDTH);
+  lcd.setPrintPos(left, cy);
+  char buffer[15];
+  sprintf_P(buffer, PSTR("%hu/%hu\x7F"), (uint16_t)degree, target);
+  left += lcd.print(buffer);
+
+  lcd.setColor(CI_FOREGROUND);
+  uint16_t tr = (cx == 0) ? lcd.getWidth()/2 : lcd.getWidth();
+  if (left < tr)
+    lcd.clearRect(left, cy, tr - left);
   
-  write_str_fill_width(left, cy, i16tostr3left(degree), BLOCK_TXT_WIDTH);
+  return left - cx;
+}
+
+void menu_main();
+void menu_media();
+void menu_preheat_m1();
+void menu_preheat_m2();
+void menu_change_filament();
+void lcd_move_x();
+void lcd_move_y();
+void _menu_move_distance(const AxisEnum axis, const screenFunc_t func, const int8_t eindex=-1);
+
+void edit_nozzle1() {
+  MenuItem_int3::action(GET_TEXT(MSG_NOZZLE), 
+    &thermalManager.temp_hotend[0].target, 0, heater_maxtemp[0] - 15, 
+    []{ thermalManager.start_watching_hotend(0); ui.go_back(); });
+}
+
+#if HOTENDS > 1
+void edit_nozzle2() {
+  MenuItem_int3::action(GET_TEXT(MSG_NOZZLE),
+    &thermalManager.temp_hotend[1].target, 0, heater_maxtemp[1] - 15, 
+    []{ thermalManager.start_watching_hotend(1); ui.go_back(); });
+}
+#endif
+
+#if HAS_HEATED_BED
+void edit_bed() {
+  MenuItem_int3::action(GET_TEXT(MSG_BED), 
+    &thermalManager.temp_bed.target, 0, BED_MAXTEMP - 10, 
+    []{ thermalManager.start_watching_bed(); ui.go_back(); });
+}
+#endif
+
+#if HAS_FAN0
+void edit_fan() {
+  MenuItem_percent::action(GET_TEXT(MSG_FIRST_FAN_SPEED), 
+    &thermalManager.fan_speed[0], 0, 255, 
+    [] {thermalManager.set_fan_speed(0, thermalManager.fan_speed[0]); ui.go_back(); });
+}
+#endif
+
+void edit_flow() {
+  MenuItem_int3::action(GET_TEXT(MSG_FLOW),
+    &planner.flow_percentage[active_extruder], 10, 999, 
+    []{ planner.refresh_e_factor(active_extruder); ui.go_back(); });
+}
+
+void edit_feedrate() {
+  MenuItem_int3::action(GET_TEXT(MSG_SPEED),
+    &feedrate_percentage, 10, 999, 
+    []{ ui.go_back(); });
+}
+
+void autohome() {
+  MenuItem_gcode::action(GET_TEXT(MSG_AUTO_HOME), G28_STR);
+}
+
+void submenu_move_x() {
+  MenuItem_submenu::action(GET_TEXT(MSG_MOVE_X), []{ _menu_move_distance(X_AXIS, lcd_move_x); });
+}
+
+void submenu_move_y() {
+  MenuItem_submenu::action(GET_TEXT(MSG_MOVE_Y), []{ _menu_move_distance(Y_AXIS, lcd_move_y); });
+}
+
+void submenu_move_z() {
+  MenuItem_submenu::action(GET_TEXT(MSG_MOVE_Z), []{ _menu_move_distance(Z_AXIS, lcd_move_z); });
+}
+
+void MarlinUI::status_screen() {
+  #if ENABLED(ENCODER_RATE_MULTIPLIER)
+  MarlinUI::enable_encoder_multiplier(false);
+  #endif
+
+  #if HAS_LCD_MENU
+
+    // check rotary encoder
+    #if HAS_ENCODER_ACTION
+    int8_t pos = int16_t(encoderPosition) / ENCODER_STEPS_PER_MENU_ITEM;
+    uint8_t newp = (menu_selected + S_LAST + pos) % S_LAST;
+    menu_selected = selected_item(newp);
+
+    // skip disabled items
+    if (printingIsActive() || printingIsPaused()) {
+      while (menu_selected == S_PRINT ||
+             menu_selected == S_AUTOHOME ||
+             menu_selected == S_PRHEAT1 ||
+             menu_selected == S_PRHEAT2 ||
+             menu_selected == S_COOLDOWN ||
+             menu_selected == S_X ||
+             menu_selected == S_Y ||
+             menu_selected == S_Z) {
+        newp = (menu_selected + S_LAST + ((pos > 0) ? 1 : -1)) % S_LAST;
+        menu_selected = selected_item(newp);
+      }
+    } else {
+      // not printing
+      while (menu_selected == S_PAUSE ||
+             menu_selected == S_STOP ||
+             menu_selected == S_ZBABYSTEPPING) {
+        newp = (menu_selected + S_LAST + ((pos > 0) ? 1 : -1)) % S_LAST;
+        menu_selected = selected_item(newp);
+      }
+    }
+    encoderPosition = 0;
+    #endif
+  
+    if (use_click()) {
+      switch (menu_selected) {
+        case S_NOZZLE1:
+          ui.goto_screen(edit_nozzle1);
+          break;
+
+        #if HOTENDS > 1
+        case S_NOZZLE2:
+          ui.goto_screen(edit_nozzle2);
+          break;
+        #endif
+
+        #if HAS_HEATED_BED
+        case S_BED:
+          ui.goto_screen(edit_bed);
+          break;
+        #endif
+
+        #if HAS_FAN0
+        case S_FAN:
+          ui.goto_screen(edit_fan);
+          break;
+        #endif
+
+        case S_FLOW:
+          ui.goto_screen(edit_flow);
+          break;
+
+        case S_PRINT:
+          #if ENABLED(SDSUPPORT)
+          ui.goto_screen(menu_media);
+          #endif 
+          break;
+
+        case S_PAUSE:
+          if (printingIsPaused())
+            ui.resume_print();
+          else
+            ui.pause_print();
+          break;
+
+        case S_STOP:
+          ui.abort_print();
+          break;
+
+        case S_FEEDRATE:
+          ui.goto_screen(edit_feedrate);
+          break;
+
+        case S_AUTOHOME:
+          autohome();
+          break;
+
+        case S_PRHEAT1:
+          ui.goto_screen(menu_preheat_m1);
+          break;
+
+        case S_PRHEAT2:
+          ui.goto_screen(menu_preheat_m2);
+          break;
+
+        case S_COOLDOWN:
+          thermalManager.zero_fan_speeds();
+          thermalManager.disable_all_heaters();
+          break;
+
+        #if HAS_FILAMENT_SENSOR
+        case S_FILAMENT:
+          ui.goto_screen(menu_change_filament);
+          break;
+        #endif
+
+        #if ENABLED(BABYSTEPPING)
+        case S_ZBABYSTEPPING:
+          #if ENABLED(BABYSTEP_ZPROBE_OFFSET)
+          ui.goto_screen(lcd_babystep_zoffset);
+          #else
+          ui.goto_screen(lcd_babystep_z);
+          #endif
+          break;
+        #endif
+
+        case S_Z:
+          submenu_move_z();
+          break;
+
+        case S_X:
+          submenu_move_x();
+          break;
+
+        case S_Y:
+          submenu_move_y();
+          break;
+
+        case S_MENU:
+        default:
+          ui.goto_screen(menu_main);
+          break;
+      }
+      return;
+    }
+  #endif
+  
+  draw_status_screen();
 }
 
 void MarlinUI::draw_status_screen() {
   static bool last_blink = false;
   uint8_t cx = 0;
   uint8_t cy = 0;
-  ucg.setPrintPos(cx, cy);
-  ucg.setColor(CI_FOREGROUND);
+  lcd.setPrintPos(cx, cy);
+  lcd.setColor(CI_FOREGROUND);
+  bool printing = (printingIsActive() || printingIsPaused());
+  
+  #define SET_COLOR_FOR(x) (menu_selected == x) ? lcd.setColor(CI_BACKGROUND) : lcd.setColor(CI_FOREGROUND)
+  
+  // line 0 is for buttons: menu, print, pause, stop, preheat
+  // menu
+  SET_COLOR_FOR(S_MENU);
+  lcd.drawBitmapP(cx, cy, menu_icon, 1, sizeof(menu_icon));
+  cx += ICON_WIDTH + 2;
+  
+  if (!printing) {
+    // print
+    SET_COLOR_FOR(S_PRINT);
+    lcd.drawBitmapP(cx, cy, print_icon, 1, sizeof(print_icon));
+    cx += ICON_WIDTH + 2;
 
-  #define SCR_BLOCK_POS_CTRL do { \
-    cx += BLOCK_WIDTH; \
-    if (LCD_PIXEL_WIDTH - cx < BLOCK_WIDTH) { \
-      cy += 2; \
-      cx = 0; \
-    } \
-  } while (0)
+    SET_COLOR_FOR(S_AUTOHOME);
+    lcd.drawBitmapP(cx, cy, home_icon, 1, sizeof(home_icon));
+    cx += ICON_WIDTH + 2;
 
-  // hotends
-  HOTEND_LOOP() {
-  smallucg_draw_hotend_status(e, thermalManager.degTargetHotend(e), 
-    thermalManager.degHotend(e), cx, cy, nozzle_icon, 2, sizeof(nozzle_icon));
+    // preheat 1
+    SET_COLOR_FOR(S_PRHEAT1);
+    lcd.drawBitmapP(cx, cy, fire_icon, 1, sizeof(fire_icon));
+    cx += ICON_WIDTH + 1;
+    cx += lcd.drawString(cx, cy, "1");
+    cx += 2;
+    
+    // preheat 2
+    SET_COLOR_FOR(S_PRHEAT2);
+    lcd.drawBitmapP(cx, cy, fire_icon, 1, sizeof(fire_icon));
+    cx += ICON_WIDTH + 1;
+    cx += lcd.drawString(cx, cy, "2");
+    cx += 2;
+
+    // cooldown
+    SET_COLOR_FOR(S_COOLDOWN);
+    lcd.drawBitmapP(cx, cy, cooldown_icon, 1, sizeof(cooldown_icon));
+    cx += ICON_WIDTH + 2;
   }
-  SCR_BLOCK_POS_CTRL;
+  else {
+    // pause or continue
+    SET_COLOR_FOR(S_PAUSE);
+    if (printingIsPaused())
+      lcd.drawBitmapP(cx, cy, continue_icon, 1, sizeof(continue_icon));
+    else
+      lcd.drawBitmapP(cx, cy, pause_icon, 1, sizeof(pause_icon));
+    cx += ICON_WIDTH + 2;
+
+    // stop
+    SET_COLOR_FOR(S_STOP);
+    lcd.drawBitmapP(cx, cy, stop_icon, 1, sizeof(stop_icon));
+    cx += ICON_WIDTH + 2;
+  }
+
+  // filament runnout
+  #if HAS_FILAMENT_SENSOR
+  SET_COLOR_FOR(S_FILAMENT);
+  lcd.drawBitmapP(cx, cy, spool_icon, 1, sizeof(spool_icon));
+  cx += ICON_WIDTH;
+  if (runout.enabled && runout.filament_ran_out) {
+    lcd.setPrintPos(cx + ICON_WIDTH, cy);
+    cx += lcd.print("*");
+  }
+  #endif
+
+  lcd.setColor(CI_FOREGROUND);
+  lcd.clearRect(cx, cy, lcd.getWidth() - cx);
+
+  // lines 1 and 2 are for temperature and z (when printing)
+  // hotends
+  cy = 1;
+  cx = 0;
+  SET_COLOR_FOR(S_NOZZLE1);
+  nk_draw_hotend_status(0, thermalManager.degTargetHotend(0), 
+        thermalManager.degHotend(0), cx, cy, nozzle_icon, 1, sizeof(nozzle_icon));
+
+  #if HOTENDS > 1
+  cx = 43;
+  SET_COLOR_FOR(S_NOZZLE2);
+  nk_draw_hotend_status(1, thermalManager.degTargetHotend(1), 
+        thermalManager.degHotend(1), cx, cy, nozzle_icon, 1, sizeof(nozzle_icon));
+  #endif
 
   // bed
+  cy = 2;
+  cx = 0;
   #if HAS_HEATED_BED
-    smallucg_draw_hotend_status(H_BED, thermalManager.degTargetBed(),
-      thermalManager.degBed(), cx, cy, bed_icon, 2, sizeof(bed_icon));
-    SCR_BLOCK_POS_CTRL;
+    SET_COLOR_FOR(S_BED);
+    cx += nk_draw_hotend_status(H_BED, thermalManager.degTargetBed(),
+      thermalManager.degBed(), cx, cy, bed_icon, 1, sizeof(bed_icon));
+    cx++;
   #endif
 
-  // fan0
-  #if HAS_FAN0
-    ucg.drawBitmapP(cx, cy, fan_icon, 2, sizeof(fan_icon));
-    ucg.drawString(cx + ICON_WIDTH, cy + 1, "%");
-    const int16_t per = ((thermalManager.fan_speed[0] + 1) * 100) / 256;
-    write_str_fill_width(cx + ICON_WIDTH, cy, i16tostr3left(per), BLOCK_TXT_WIDTH);
-    SCR_BLOCK_POS_CTRL;
-  #endif
+  // show Z on line 2 when printing 
+  if (printing && cx <= lcd.getWidth() - 25) {
+    uint8_t width = lcd.stringWidth("Z") + 1;
+    const char *txt = ftostr4sign(LOGICAL_Z_POSITION(current_position[Z_AXIS]));
+    width += lcd.stringWidth(txt);
+    
+    uint8_t newcx = lcd.getWidth() - width;
+    lcd.setColor(CI_FOREGROUND);
+    lcd.clearRect(cx, cy, newcx - cx);
+    cx = newcx;
+
+    SET_COLOR_FOR(S_ZBABYSTEPPING);
+    lcd.setPrintPos(cx, cy);
+    cx += lcd.print("Z", true);
+    cx += lcd.print(txt);
+  }
+
+  if (cx < lcd.getWidth()) {
+    lcd.setColor(CI_FOREGROUND);
+    lcd.clearRect(cx, cy, lcd.getWidth() - cx);
+  }
+
+  // line 3: feedrate, flow and fan
+  const uint8_t line3w = 28;
+  cy = 3;
+  cx = 0;
 
   // feedrate
-  ucg.drawBitmapP(cx, cy, feedrate_icon, 2, sizeof(feedrate_icon));
-  ucg.drawString(cx + ICON_WIDTH + 1, cy + 1, "%");
-  write_str_fill_width(cx + ICON_WIDTH + 1, cy, i16tostr3left(feedrate_percentage), BLOCK_TXT_WIDTH-1);
-  SCR_BLOCK_POS_CTRL;
+  SET_COLOR_FOR(S_FEEDRATE);
+  lcd.drawBitmapP(cx, cy, feedrate_icon, 1, sizeof(feedrate_icon));
+  cx += ICON_WIDTH;
+  lcd.setPrintPos(cx, cy);
+  cx += lcd.print(i16tostr3left(feedrate_percentage), true);
+  cx += lcd.print("%");
+  uint8_t rcx = cx;
 
-  // sd printing and time
-  #if EITHER(LCD_SET_PROGRESS_MANUALLY, SDSUPPORT)
-    uint8_t progress_bar_percent = ui.get_progress_percent();
-    const char *p = i16tostr3left(progress_bar_percent);
-    char buffer[20]; uint8_t i = 0;
-    while(*p) { buffer[i++] = *p; p++; };
-    buffer[i++] = '%';
-    buffer[i++] = ' ';
-    // time elapsed
-    duration_t elapsed = print_job_timer.duration();
-    elapsed.toDigital(&buffer[i], true);
-    write_str_fill_width(cx, cy, buffer, BLOCK_WIDTH*2);
-    // progress bar
-    ucg.setPrintPos(cx, cy+1);
-    ucg.drawPBar(BLOCK_WIDTH*2, progress_bar_percent);
+  // fan0, right aligned
+  uint8_t fcx = 0;
+  #if HAS_FAN0
+    const int16_t per = ((thermalManager.fan_speed[0] + 1) * 100) / 256;
+    const char *aux = i16tostr3left(per);
+    fcx = lcd.getWidth() - ICON_WIDTH - lcd.stringWidth(aux) - lcd.stringWidth("%") - 1;
+
+    SET_COLOR_FOR(S_FAN);
+    cx = fcx;
+    lcd.drawBitmapP(cx, cy, fan_icon, 1, sizeof(fan_icon));
+    cx += ICON_WIDTH;
+    lcd.setPrintPos(cx, cy);
+    lcd.print(aux, true);
+    lcd.print("%");
   #endif
 
-  // x,y,z position
-  uint8_t w = 0;
-  cy = 4;
-  ucg.setPrintPos(0, cy);
-  w += ucg.print("Z");
-  if (TEST(axis_homed, Z_AXIS))
-    w += ucg.print(ftostr4sign(LOGICAL_X_POSITION(current_position[Z_AXIS])));
-  else
-    w += ucg.print(" ?");  
+  // flow, centered
+  uint8_t lcx = cx = line3w + (fcx == 0 ? 0 : (fcx - 2*line3w)/2);
+  SET_COLOR_FOR(S_FLOW);
+  lcd.drawBitmapP(cx, cy, flow_icon, 1, sizeof(flow_icon));
+  cx += ICON_WIDTH;
+  lcd.setPrintPos(cx, cy);
+  cx += lcd.print(i16tostr3left(planner.flow_percentage[active_extruder]), true);
+  cx += lcd.print("%");
 
-  if (!printingIsActive()) {
-    // print X and Y when not printing
-    w += ucg.print(" X");
+  lcd.setColor(CI_FOREGROUND);
+  lcd.clearRect(rcx, cy, lcx - rcx);
+  lcd.clearRect(cx, cy, fcx - cx);
+
+  // line 4: x, y and z when !printing; printing duration and progress otherwise
+  cy = 4;
+  cx = 0;
+
+  if (!printing) {
+    // x, y, z position
+    lcd.setColor(CI_FOREGROUND);
+    lcd.setPrintPos(cx, cy);
+    SET_COLOR_FOR(S_Z);
+    cx += lcd.print("Z", true);
+    if (TEST(axis_homed, Z_AXIS))
+      cx += lcd.print(ftostr4sign(LOGICAL_Z_POSITION(current_position[Z_AXIS])));
+    else
+      cx += lcd.print(" ?");  
+
+    SET_COLOR_FOR(S_X);
+    cx += lcd.print(" X", true);
     if (TEST(axis_homed, X_AXIS))
-      w += ucg.print(ftostr4sign(LOGICAL_X_POSITION(current_position[X_AXIS])));
+      cx += lcd.print(ftostr4sign(LOGICAL_X_POSITION(current_position[X_AXIS])));
     else
-      w += ucg.print(" ?");
-    w += ucg.print(" Y");
+      cx += lcd.print(" ?");
+
+    SET_COLOR_FOR(S_Y);
+    cx += lcd.print(" Y", true);
     if (TEST(axis_homed, Y_AXIS))
-      w += ucg.print(ftostr4sign(LOGICAL_X_POSITION(current_position[Y_AXIS])));
+      cx += lcd.print(ftostr4sign(LOGICAL_Y_POSITION(current_position[Y_AXIS])));
     else
-      w += ucg.print(" ?");
+      cx += lcd.print(" ?");
+
+    lcd.setColor(CI_FOREGROUND);
+    lcd.clearRect(cx, cy, LCD_PIXEL_WIDTH - cx);
   }
-  ucg.clearRect(w, cy, LCD_PIXEL_WIDTH - w);
+  else { // printingIsActive
+    // sd printing and time
+    #if EITHER(LCD_SET_PROGRESS_MANUALLY, SDSUPPORT)
+      char buffer[20];
+      uint8_t pos;
+
+      // time elapsed
+      duration_t elapsed = print_job_timer.duration();
+      bool has_days = (elapsed.value >= 60*60*24L);
+      pos = elapsed.toDigital(buffer, has_days);
+      buffer[pos++] = ' ';
+
+      // % done
+      uint8_t progress_bar_percent = ui.get_progress_percent();
+      const char *p = i16tostr3left(progress_bar_percent);
+      while(*p) { buffer[pos++] = *p; p++; };
+      buffer[pos++] = '%';
+      buffer[pos++] = ' ';
+      buffer[pos++] = 0;
+
+      lcd.setColor(CI_FOREGROUND);
+      lcd.drawBitmapP(cx, cy, clock_icon, 1, sizeof(clock_icon));
+      cx += ICON_WIDTH;
+      cx += lcd.drawString(ICON_WIDTH, cy, buffer);
+
+      // progress bar
+      lcd.setColor(CI_FOREGROUND);
+      lcd.setPrintPos(cx, cy);
+      lcd.drawPBar(lcd.getWidth() - cx, progress_bar_percent);
+    #endif
+  }
 
   // message
   cy = 5;
+  lcd.setColor(CI_FOREGROUND);
   #if !ENABLED(STATUS_MESSAGE_SCROLLING)
-    write_str_fill_width(0, cy, status_message, LCD_PIXEL_WIDTH-1);
+    write_str_fill_width(0, cy, status_message, LCD_PIXEL_WIDTH);
   #else
     // string fit
-    uint8_t len = ucg.stringWidth(status_message);
+    uint8_t len = lcd.stringWidth(status_message);
     if (len <= LCD_PIXEL_WIDTH) {
       write_str_fill_width(0, cy, status_message, LCD_PIXEL_WIDTH);
     }
@@ -378,7 +880,8 @@ void MarlinUI::draw_status_screen() {
 
 // Initialize or re-initialize the LCD
 void MarlinUI::init_lcd() {
-  ucg.begin();
+  lcd.begin();
+  if (contrast == 0) contrast = DEFAULT_LCD_CONTRAST;
   refresh_contrast();
   drawing_screen = false;
   first_page = true;  // u8g concept, but scrolling in menus depend on this
@@ -386,18 +889,18 @@ void MarlinUI::init_lcd() {
 
 // The kill screen is displayed for unrecoverable conditions
 void MarlinUI::draw_kill_screen() {
-  ucg.setColor(CI_BACKGROUND);
-  ucg.clearScreen();
-  ucg.drawString(0, 0, status_message);
-  ucg.setPrintPos(0, 3);
-  ucg.printP(GET_TEXT(MSG_HALTED));
-  ucg.setPrintPos(0, 4);
-  ucg.printP(GET_TEXT(MSG_PLEASE_RESET));
+  lcd.setColor(CI_BACKGROUND);
+  lcd.clearScreen();
+  lcd.drawString(0, 0, status_message);
+  lcd.setPrintPos(0, 3);
+  lcd.printP(GET_TEXT(MSG_HALTED));
+  lcd.setPrintPos(0, 4);
+  lcd.printP(GET_TEXT(MSG_PLEASE_RESET));
 }
 
 void MarlinUI::clear_lcd() {
-  ucg.setColor(CI_FOREGROUND);
-  ucg.clearScreen();
+  lcd.setColor(CI_FOREGROUND);
+  lcd.clearScreen();
 }
 
 #if HAS_LCD_MENU
@@ -413,20 +916,20 @@ void MarlinUI::clear_lcd() {
     uint8_t cy = row;
     uint8_t cx = 0;
 
-    if (sel) ucg.setColor(CI_BACKGROUND);
-    else ucg.setColor(CI_FOREGROUND);
+    if (sel) lcd.setColor(CI_BACKGROUND);
+    else lcd.setColor(CI_FOREGROUND);
 
     if (icon) {
-      ucg.drawBitmapP(cx, cy, icon, icon_width, icon_size);
+      lcd.drawBitmapP(cx, cy, icon, icon_width, icon_size);
       cx = ICON_WIDTH;
     }
     
     // print main text
     uint8_t w = cx;
-    ucg.setPrintPos(cx, cy);
+    lcd.setPrintPos(cx, cy);
     if (pstr) {
-      if (pstr_pgm) w += ucg.printP(pstr);
-      else w += ucg.print(pstr);
+      if (pstr_pgm) w += lcd.printP(pstr);
+      else w += lcd.print(pstr);
     }
 
     // print data
@@ -437,24 +940,24 @@ void MarlinUI::clear_lcd() {
         w = 0;
       }
       if (pgm) {
-        dataw = ucg.stringWidthP(data);
-        ucg.setPrintPos(LCD_PIXEL_WIDTH - dataw, cy);
-        ucg.printP(data);
+        dataw = lcd.stringWidthP(data);
+        lcd.setPrintPos(LCD_PIXEL_WIDTH - dataw, cy);
+        lcd.printP(data);
       } else {
-        dataw = ucg.stringWidth(data);
-        ucg.setPrintPos(LCD_PIXEL_WIDTH - dataw, cy);
-        ucg.print(data);
+        dataw = lcd.stringWidth(data);
+        lcd.setPrintPos(LCD_PIXEL_WIDTH - dataw, cy);
+        lcd.print(data);
       }
     }
 
     // fill remaining empty background
     int8_t wf = LCD_PIXEL_WIDTH - dataw - w;
     if (wf > 0) {
-      ucg.clearRect(w, cy, wf);
+      lcd.clearRect(w, cy, wf);
     }
 
     /*if (!pstr) { // text draw next using lcd_print
-      ucg.setPrintPos(cx, cy);
+      lcd.setPrintPos(cx, cy);
     }*/
   }
 
@@ -477,29 +980,29 @@ void MarlinUI::clear_lcd() {
 
   inline void draw_boxed_string(const uint8_t x, const uint8_t y, PGM_P const pstr, const bool inv) {
     if (inv) {
-      ucg.setColor(CI_BACKGROUND);
-      //ucg.drawFrame(x - 1, y - FONT_CHAR_HEIGHT, LCD_PIXEL_WIDTH/2-1, 8);
+      lcd.setColor(CI_BACKGROUND);
+      //lcd.drawFrame(x - 1, y - FONT_CHAR_HEIGHT, LCD_PIXEL_WIDTH/2-1, 8);
     } else {
-      ucg.setColor(CI_FOREGROUND);
-      //ucg.drawFrame(x - 1, y - FONT_CHAR_HEIGHT, LCD_PIXEL_WIDTH/2-1, 8);
+      lcd.setColor(CI_FOREGROUND);
+      //lcd.drawFrame(x - 1, y - FONT_CHAR_HEIGHT, LCD_PIXEL_WIDTH/2-1, 8);
     }
-    ucg.setPrintPos(x+2, y);
-    ucg.printP(pstr);
+    lcd.setPrintPos(x+2, y);
+    lcd.printP(pstr);
   }
 
   void MenuItem_confirm::draw_select_screen(PGM_P const yes, PGM_P const no, const bool yesno, PGM_P const pref, const char * const string/*=nullptr*/, PGM_P const suff/*=nullptr*/) {
     uint8_t cy = 0;
-    ucg.setColor(CI_FOREGROUND);
-    ucg.setPrintPos(0, cy);
-    ucg.printP(pref);
+    lcd.setColor(CI_FOREGROUND);
+    lcd.setPrintPos(0, cy);
+    lcd.printP(pref);
     if (string) {
       cy++;
-      ucg.drawString(0, cy, string);
+      lcd.drawString(0, cy, string);
     }
     if (suff) {
       cy++;
-      ucg.setPrintPos(0, cy);
-      ucg.printP(suff);
+      lcd.setPrintPos(0, cy);
+      lcd.printP(suff);
     }
     //ui.draw_select_screen_prompt(pref, string, suff);
     draw_boxed_string(1, 5, no, !yesno);
@@ -508,13 +1011,13 @@ void MarlinUI::clear_lcd() {
 
   #if ENABLED(ADVANCED_PAUSE_FEATURE)
     void MarlinUI::draw_hotend_status(const uint8_t row, const uint8_t extruder) {
-      uint8_t cx = LCD_PIXEL_WIDTH / 2 - BLOCK_WIDTH;
+      uint8_t cx = LCD_PIXEL_WIDTH / 2 - ICON_WIDTH;
       uint8_t cy = 4;
-      ucg.setColor(CI_FOREGROUND);
+      lcd.setColor(CI_FOREGROUND);
       
       // draw nozzle icon and temperatures
-      smallucg_draw_hotend_status(extruder, thermalManager.degTargetHotend(extruder),
-        thermalManager.degHotend(extruder), cx, cy, nozzle_icon, 2, sizeof(nozzle_icon));
+      nk_draw_hotend_status(extruder, thermalManager.degTargetHotend(extruder),
+        thermalManager.degHotend(extruder), cx, cy, nozzle_icon, 1, sizeof(nozzle_icon));
     }
 
   #endif // ADVANCED_PAUSE_FEATURE
@@ -537,7 +1040,7 @@ void MarlinUI::clear_lcd() {
 
   void MarlinUI::set_contrast(const int16_t value) {
     contrast = constrain(value, LCD_CONTRAST_MIN, LCD_CONTRAST_MAX);
-    ucg.setContrast(contrast);
+    lcd.setContrast(contrast);
   }
 
   #endif

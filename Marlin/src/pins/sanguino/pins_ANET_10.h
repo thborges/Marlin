@@ -159,9 +159,9 @@
   #define BTN_EN2        11
   #define BTN_ENC        30
   #define SLCD_CS_PIN    17
-  #define SLCD_A0_PIN    16
+  #define SLCD_DC_PIN    16
 
-  #define HARDWARE_SPI // enable this when LCD is connected to MOSI and SCK pins in J3
+  //#define HARDWARE_SPI // enable this when LCD is connected to MOSI and SCK pins in J3
   #if ENABLED(HARDWARE_SPI)
     // pins 28 and 29 are free!
     #if SPI_SPEED != SPI_QUARTER_SPEED

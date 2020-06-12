@@ -69,15 +69,23 @@
 #define HEATER_0_PIN                        PA1   // HOTEND0 MOSFET
 #define TEMP_0_PIN                          PA2   // Analog Input (HOTEND0 thermistor)
 
-// Heater 0 switched on/off by a 10V mosfet driven by a NPN transistor. There's a 100K pull-up resistor on transistor base.
+// DEBUG LCD
+/*#define HEATER_1_PIN  PA10
+#define E1_STEP_PIN   PA11
+#define E1_DIR_PIN    PA12
+#define E1_ENABLE_PIN PA13
+#define TEMP_1_PIN    PB14
+#define TEMP_SENSOR_1 5
+*/
+
+// Heater 0 and BED switched on/off by a 10V mosfet driven by a NPN transistor. There's a 100K pull-up resistor on transistor base.
 // 0v = enabled
 // 3-5v = disabled
-#define HEATER_0_INVERTING true                     
+#define HEATER_0_INVERTING true
+#define HEATER_BED_INVERTING true
 
 #define HEATER_BED_PIN                      PC13   // BED MOSFET
 #define TEMP_BED_PIN                        PA3   // Analog Input (BED thermistor)
-
-//#define MALYAN_FAN1_PIN                     PB8   // FAN1 header on board - PRINT FAN
 
 #define FAN_PIN       PB9
 #define BEEPER_PIN    PB8
@@ -91,10 +99,7 @@
 #define BTN_EN2 PA15
 #define BTN_ENC PB4
 
-//#define LED_PIN PC13
-
-//#define SOFTWARE_SPI
-//#define HARDWARE_SPI
+#define FIL_RUNOUT_PIN PB12
 
 // Disable DEBUG to free some IO pins, like PB3
 #define DISABLE_DEBUG
